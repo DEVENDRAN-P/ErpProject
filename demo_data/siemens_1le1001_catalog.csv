@@ -1,0 +1,2 @@
+model_number,product_name,category,rated_power,rated_power_unit,supply_voltage,supply_voltage_unit,rated_current,rated_current_unit,efficiency_class,rated_speed,rated_speed_unit,frame_size,max_temperature,max_temperature_unit,total_weight,total_weight_unit
+1LE1001-1DB43-4AA4,Siemens 1LE1001 15kW 3-Phase Motor,Electric Motors & Drives,15,kW,415,V,28.5,A,IE3 Premium,1475,rpm,160M,155,°C,,kg

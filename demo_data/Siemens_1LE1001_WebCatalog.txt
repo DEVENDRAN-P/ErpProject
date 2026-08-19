@@ -1,0 +1,15 @@
+Siemens 1LE1001-1DB43-4AA4 Industrial Motor — Web Catalog Listing
+
+This is DEMO/SAMPLE data generated for the ProductPilot AI demo. It represents
+a legacy distributor website listing that disagrees with the official
+manufacturer datasheet on several specifications.
+
+Motor: 1LE1001-1DB43-4AA4
+Supply Voltage: 415 V, 50 Hz
+Rated Power: 18.5 kW (listed as 25 HP)
+Rated Current: 32.5 A
+Efficiency Class: IE2 High Efficiency
+Rated Speed: 1460 rpm
+Max Operating Temperature: 130 degC (Insulation Class B)
+Frame Size: 160L
+Total Weight: 92 kg

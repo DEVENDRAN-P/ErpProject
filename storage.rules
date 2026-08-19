@@ -1,0 +1,41 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: check if the requesting user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: check if the authenticated user owns the file
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    // ─── User profile photos: profile-photos/{uid}/... ────────────────
+    match /profile-photos/{userId}/{allPaths=**} {
+      allow read: if isAuth();
+      allow write: if isOwner(userId)
+        && request.resource.contentType.matches('image/.*')
+        && request.resource.size < 5 * 1024 * 1024; // 5 MB limit
+    }
+
+    // ─── Uploaded documents: uploads/{uid}/... ────────────────────────
+    match /uploads/{userId}/{allPaths=**} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.size < 25 * 1024 * 1024; // 25 MB limit
+      allow delete: if isOwner(userId);
+    }
+
+    // ─── User files: users/{uid}/... (legacy path) ───────────────────
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

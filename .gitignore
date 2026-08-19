@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Next.js build output
+.next/
+out/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Local databases & logs
+*.db
+*.sqlite3
+backend.log
+
+# Environment / secrets
+.env
+.env.local
+.env.production
+
+# Firebase service account keys
+serviceAccountKey.json
+firebase-adminsdk*.json
+
+# Generated demo artifacts (recreate with demo_data/generate_demo_pdf.py)
+# demo_data/Siemens_1LE1001_Datasheet.pdf
+
+# Temporary test/debug scripts
+test_*.py
+check_*.py
+verify_*.py
+tsconfig.tsbuildinfo
+*.xlsx
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
