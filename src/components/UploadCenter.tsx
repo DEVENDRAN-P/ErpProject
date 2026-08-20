@@ -2,9 +2,7 @@
 
 import { useState, useCallback, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/context/AuthContext";
-import { storage } from "@/lib/firebase";
 import { processWorkflow, ingestUrl, ingestProduct, ProductCreateInput } from "@/lib/api";
 import {
   FileText, Globe, FileSpreadsheet, Camera, Keyboard, Upload, CheckCircle,
@@ -33,14 +31,6 @@ const MODES: { key: Mode; label: string; icon: React.ReactNode; desc: string }[]
   { key: "image", label: "Image", icon: <Camera size={20} />, desc: "Nameplate / label OCR" },
   { key: "manual", label: "Manual", icon: <Keyboard size={20} />, desc: "Hand-enter specs" },
 ];
-
-async function uploadToFirebaseStorage(file: File, uid: string): Promise<string> {
-  const ts = Date.now();
-  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storageRef = ref(storage, `uploads/${uid}/${ts}_${safe}`);
-  const snapshot = await uploadBytes(storageRef, file, { contentType: file.type });
-  return getDownloadURL(snapshot.ref);
-}
 
 function ProcessingStepper({ steps }: { steps: { label: string; status: "done" | "active" | "pending" }[] }) {
   return (
@@ -88,40 +78,27 @@ export default function UploadCenter() {
   }, []);
 
   const handleFileUpload = useCallback(async () => {
-    if (!file || !user) return;
+    if (!file) return;
     setLoading(true); setError(""); setResult(null);
     setSteps([
-      { label: "Uploading to cloud storage…", status: "active" },
-      { label: "Extracting document content", status: "pending" },
+      { label: "Extracting document content", status: "active" },
       { label: "Analyzing specifications", status: "pending" },
       { label: "Validating data quality", status: "pending" },
       { label: "Creating ProductTwin", status: "pending" },
     ]);
     try {
-      // Try Firebase Storage upload in background — don't block processing if it fails
-      let downloadURL = "";
-      try {
-        downloadURL = await uploadToFirebaseStorage(file, user.uid);
-        setSteps(s => s.map((st, i) => i === 0 ? { ...st, status: "done" } : st));
-      } catch (storageErr: any) {
-        console.warn("Firebase Storage upload failed (continuing without cloud backup):", storageErr.message);
-        setSteps(s => s.map((st, i) => i === 0 ? { ...st, status: "done", label: "Cloud storage skipped (not critical)" } : st));
-      }
-
-      setSteps(s => s.map((st, i) => i === 1 ? { ...st, status: "active" } : st));
       const form = new FormData();
       form.append("file", file);
-      if (downloadURL) form.append("storage_url", downloadURL);
-      setSteps(s => s.map((st, i) => i === 1 ? { ...st, status: "done" } : i === 2 ? { ...st, status: "active" } : st));
+      setSteps(s => s.map((st, i) => i === 0 ? { ...st, status: "done" } : i === 1 ? { ...st, status: "active" } : st));
       const res = await processWorkflow(form);
-      setSteps(s => s.map((st, i) => i <= 3 ? { ...st, status: "done" } : i === 4 ? { ...st, status: "active" } : st));
+      setSteps(s => s.map((st, i) => i <= 2 ? { ...st, status: "done" } : i === 3 ? { ...st, status: "active" } : st));
       setSteps(s => s.map(st => ({ ...st, status: "done" as const })));
-      setResult({ mode, data: { ...res, ...(downloadURL ? { storage_url: downloadURL } : {}) } });
+      setResult({ mode, data: res });
       if (res?.product?.id) router.push(`/?product=${res.product.id}`);
     } catch (e: any) {
       setError(e.message || "Unable to process workflow.");
     } finally { setLoading(false); }
-  }, [file, mode, user, router]);
+  }, [file, mode, router]);
 
   const handleUrlIngest = useCallback(async () => {
     if (!url.trim()) return;

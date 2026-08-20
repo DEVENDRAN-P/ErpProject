@@ -59,9 +59,6 @@ manager = ConnectionManager()
 @router.websocket("/ws/notifications")
 async def websocket_notifications(websocket: WebSocket):
     """WebSocket endpoint for real-time notifications."""
-    # Accept connection first, then authenticate via query params
-    await websocket.accept()
-
     user_id = websocket.query_params.get("user_id", "anonymous")
 
     await manager.connect(websocket, user_id)

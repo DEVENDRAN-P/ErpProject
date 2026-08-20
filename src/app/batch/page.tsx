@@ -5,7 +5,9 @@ import { batchImportCsv, getBatchExportUrl } from "@/lib/api";
 import { ArrowLeft, Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle, X } from "lucide-react";
 import Link from "next/link";
 
-export default function BatchPage() {
+import ProtectedRoute from "@/components/ProtectedRoute";
+
+function BatchContent() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
@@ -213,5 +215,13 @@ export default function BatchPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BatchPage() {
+  return (
+    <ProtectedRoute>
+      <BatchContent />
+    </ProtectedRoute>
   );
 }

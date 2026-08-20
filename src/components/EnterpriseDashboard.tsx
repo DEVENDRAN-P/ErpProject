@@ -19,9 +19,17 @@ import {
 } from "lucide-react";
 import { StatusBadgeFromStatus, HealthGauge, KpiCard, SkeletonDashboard, SkeletonTable,
   EmptyState, ErrorState, PageHeader } from "@/components/ui";
-import KnowledgeGraphTab from "@/components/KnowledgeGraphTab";
-import ExplainabilityTab from "@/components/ExplainabilityTab";
-import NotificationBell from "@/components/NotificationBell";
+import dynamic from "next/dynamic";
+
+const KnowledgeGraphTab = dynamic(() => import("@/components/KnowledgeGraphTab"), {
+  loading: () => <div className="skeleton h-[400px] rounded-lg" />,
+});
+const ExplainabilityTab = dynamic(() => import("@/components/ExplainabilityTab"), {
+  loading: () => <div className="space-y-4">{[...Array(4)].map((_, i) => <div key={i} className="skeleton h-12 rounded-lg" />)}</div>,
+});
+const NotificationBell = dynamic(() => import("@/components/NotificationBell"), {
+  loading: () => <div className="h-8 w-8 rounded-lg skeleton" />,
+});
 
 // ─── Product Truth & Validation ────────────────────────────────────
 function ValidationTab({ product }: { product: ProductRead }) {
@@ -493,13 +501,45 @@ export default function EnterpriseDashboard({ initialProductId, initialTab }: { 
     return "Good evening";
   };
 
+  const getHeaderTitle = () => {
+    if (!initialTab) return `${getGreeting()}, ${user?.displayName?.split(" ")[0] || "User"}`;
+    const titles: Record<string, string> = {
+      "ProductTwin": "ProductTwin Catalog & Digital Twin",
+      "Validation": "Validation Engine — LOV & UOM Verification",
+      "Health Score": "Health Analytics & Score Breakdown",
+      "Human Review": "Human Review & Approval Workflow",
+      "CatalogPilot": "CatalogPilot Version History & Audit",
+      "RAG": "RAG Verification & Evidence Q&A",
+      "Export": "Data Export Center",
+      "Knowledge Graph": "Knowledge Graph Entity Topology",
+      "Explainability": "Explainability AI & Attribution",
+    };
+    return titles[initialTab] || initialTab;
+  };
+
+  const getHeaderSubtitle = () => {
+    if (!initialTab) return "Here's the current state of your product intelligence workspace.";
+    const subtitles: Record<string, string> = {
+      "ProductTwin": "Extracted specifications, confidence scores, and source evidence for your product catalog.",
+      "Validation": "Data quality checks, LOV compliance, unit of measure normalization, and plausibility verification.",
+      "Health Score": "Product Health Score (0–100) calculated from completeness, consistency, confidence, and reliability.",
+      "Human Review": "Review flagged conflicts, contradictory source documents, and pending human approvals.",
+      "CatalogPilot": "Audit trail of changes, previous versions, and product catalog rollback points.",
+      "RAG": "Ask questions against source PDF datasheets with verified citations and evidence quotes.",
+      "Export": "Download structured JSON or CSV catalog exports with full provenance metadata.",
+      "Knowledge Graph": "Interactive graph visualization of products, categories, attributes, and relationships.",
+      "Explainability": "AI confidence breakdown, extraction method attribution, and reasoning logs.",
+    };
+    return subtitles[initialTab] || "Product intelligence feature overview.";
+  };
+
   return (
     <div className="space-y-6 page-enter">
       {/* Welcome */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{getGreeting()}, {user?.displayName?.split(" ")[0] || "User"}</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Here&apos;s the current state of your product intelligence workspace.</p>
+          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{getHeaderTitle()}</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>{getHeaderSubtitle()}</p>
         </div>
         <div className="flex items-center gap-2">
           <a href="/reports" className="h-8 rounded-lg border px-3 text-xs font-medium flex items-center gap-1.5 transition"
@@ -514,55 +554,87 @@ export default function EnterpriseDashboard({ initialProductId, initialTab }: { 
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <KpiCard label="Products" value={stats?.total_products} icon={<Package size={16} />} color="var(--accent-primary)" loading={statsLoading} />
-        <KpiCard label="Avg Health" value={stats?.average_health_score ? `${stats.average_health_score}%` : undefined} icon={<Activity size={16} />} color="var(--color-success)" loading={statsLoading} />
-        <KpiCard label="Needs Review" value={stats?.products_requiring_review} icon={<Eye size={16} />} color="var(--color-warning)" loading={statsLoading} />
-        <KpiCard label="Missing Specs" value={stats?.missing_attributes} icon={<XCircle size={16} />} color="var(--color-error)" loading={statsLoading} />
-        <KpiCard label="Conflicts" value={stats?.open_conflicts} icon={<AlertTriangle size={16} />} color="#7C3AED" loading={statsLoading} />
-        <KpiCard label="Pending Reviews" value={stats?.pending_reviews} icon={<Clock size={16} />} color="var(--color-info)" loading={statsLoading} />
-      </div>
-
-      {/* Product list */}
-      <div className="rounded-lg border p-4" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="relative flex-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-            <label htmlFor="product-search" className="sr-only">Search products</label>
-            <input id="product-search" name="product-search" value={searchQ} onChange={e => setSearchQ(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && loadProducts(searchQ)}
-              placeholder="Search products…"
-              className="w-full h-8 pl-8 pr-3 rounded-lg border text-[13px]"
-              style={{ borderColor: "var(--border-default)", color: "var(--text-primary)", background: "var(--neutral-50)" }} />
-          </div>
-          <button onClick={() => loadProducts(searchQ)} className="h-8 rounded-lg px-3.5 text-xs font-medium text-white transition shrink-0"
-            style={{ background: "var(--accent-primary)" }}>Search</button>
-          <button onClick={onRefresh} className="h-8 rounded-lg border px-2.5 transition shrink-0"
-            style={{ borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>
-            <RefreshCw size={14} />
-          </button>
+      {/* KPI Cards — only show on main Dashboard overview */}
+      {!initialTab && (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          <KpiCard label="Products" value={stats?.total_products} icon={<Package size={16} />} color="var(--accent-primary)" loading={statsLoading} />
+          <KpiCard label="Avg Health" value={stats?.average_health_score ? `${stats.average_health_score}%` : undefined} icon={<Activity size={16} />} color="var(--color-success)" loading={statsLoading} />
+          <KpiCard label="Needs Review" value={stats?.products_requiring_review} icon={<Eye size={16} />} color="var(--color-warning)" loading={statsLoading} />
+          <KpiCard label="Missing Specs" value={stats?.missing_attributes} icon={<XCircle size={16} />} color="var(--color-error)" loading={statsLoading} />
+          <KpiCard label="Conflicts" value={stats?.open_conflicts} icon={<AlertTriangle size={16} />} color="#7C3AED" loading={statsLoading} />
+          <KpiCard label="Pending Reviews" value={stats?.pending_reviews} icon={<Clock size={16} />} color="var(--color-info)" loading={statsLoading} />
         </div>
-        {error && <ErrorState message={error} onRetry={onRefresh} />}
-        {loading ? (
-          <SkeletonTable rows={3} />
-        ) : products.length === 0 ? (
-          <EmptyState icon={<Package size={24} />} title="No products yet" description="Upload your first industrial datasheet to create your ProductTwin." action={{ label: "Upload Product", href: "/?view=upload" }} />
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {products.map(p => (
-              <button key={p.id} onClick={() => { setSelected(p); setActiveTab("ProductTwin"); }}
-                className="rounded-lg border px-3 py-2 text-left text-xs transition"
-                style={{
-                  borderColor: selected?.id === p.id ? "var(--accent-primary)" : "var(--border-default)",
-                  background: selected?.id === p.id ? "var(--accent-primary-light)" : "var(--bg-card)",
-                  color: selected?.id === p.id ? "var(--accent-primary)" : "var(--text-secondary)",
-                }}>
-                <div className="font-semibold">{p.name}</div>
-                <div className="mt-0.5" style={{ color: "var(--text-muted)" }}>{p.model_number} · Health {p.health_score}</div>
-              </button>
-            ))}
+      )}
+
+      {/* Product Selector Bar */}
+      <div className="rounded-lg border p-4" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+              <label htmlFor="product-search" className="sr-only">Search products</label>
+              <input id="product-search" name="product-search" value={searchQ} onChange={e => setSearchQ(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && loadProducts(searchQ)}
+                placeholder="Search products in catalog…"
+                className="w-full h-8 pl-8 pr-3 rounded-lg border text-[13px]"
+                style={{ borderColor: "var(--border-default)", color: "var(--text-primary)", background: "var(--neutral-50)" }} />
+            </div>
+            <button onClick={() => loadProducts(searchQ)} className="h-8 rounded-lg px-3.5 text-xs font-medium text-white transition shrink-0"
+              style={{ background: "var(--accent-primary)" }}>Search</button>
+            <button onClick={onRefresh} className="h-8 rounded-lg border px-2.5 transition shrink-0"
+              style={{ borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>
+              <RefreshCw size={14} />
+            </button>
           </div>
+
+          {/* Product selector dropdown for feature views */}
+          {products.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="active-product-select" className="text-xs font-semibold shrink-0" style={{ color: "var(--text-secondary)" }}>Selected Product:</label>
+              <select
+                id="active-product-select"
+                value={selected?.id || ""}
+                onChange={(e) => {
+                  const p = products.find(prod => prod.id === Number(e.target.value));
+                  if (p) setSelected(p);
+                }}
+                className="h-8 rounded-lg border px-3 text-xs font-medium max-w-[280px] truncate"
+                style={{ borderColor: "var(--border-default)", color: "var(--text-primary)", background: "var(--bg-card)" }}
+              >
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.model_number}) — Health {p.health_score}%
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {error && <ErrorState message={error} onRetry={onRefresh} />}
+        
+        {/* Full Product buttons list — show on main overview or when searching */}
+        {(!initialTab || searchQ) && (
+          loading ? (
+            <SkeletonTable rows={3} />
+          ) : products.length === 0 ? (
+            <EmptyState icon={<Package size={24} />} title="No products yet" description="Upload your first industrial datasheet to create your ProductTwin." action={{ label: "Upload Product", href: "/?view=upload" }} />
+          ) : (
+            <div className="flex flex-wrap gap-1.5 pt-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+              {products.map(p => (
+                <button key={p.id} onClick={() => { setSelected(p); if (!initialTab) setActiveTab("ProductTwin"); }}
+                  className="rounded-lg border px-3 py-2 text-left text-xs transition"
+                  style={{
+                    borderColor: selected?.id === p.id ? "var(--accent-primary)" : "var(--border-default)",
+                    background: selected?.id === p.id ? "var(--accent-primary-light)" : "var(--bg-card)",
+                    color: selected?.id === p.id ? "var(--accent-primary)" : "var(--text-secondary)",
+                  }}>
+                  <div className="font-semibold">{p.name}</div>
+                  <div className="mt-0.5" style={{ color: "var(--text-muted)" }}>{p.model_number} · Health {p.health_score}</div>
+                </button>
+              ))}
+            </div>
+          )
         )}
       </div>
 

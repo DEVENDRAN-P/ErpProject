@@ -1,16 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import EnterpriseDashboard from "@/components/EnterpriseDashboard";
-import UploadCenter from "@/components/UploadCenter";
+import dynamic from "next/dynamic";
+
+const EnterpriseDashboard = dynamic(() => import("@/components/EnterpriseDashboard"), {
+  loading: () => (
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
+      <div className="space-y-3">
+        <div className="skeleton h-8 w-48 rounded-lg" />
+        <div className="skeleton h-4 w-72 rounded-lg" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        {[...Array(6)].map((_, i) => <div key={i} className="skeleton h-20 rounded-lg" />)}
+      </div>
+      <div className="skeleton h-40 rounded-lg" />
+    </div>
+  ),
+});
+const UploadCenter = dynamic(() => import("@/components/UploadCenter"), {
+  loading: () => <div className="p-4 lg:p-6"><div className="skeleton h-64 rounded-lg" /></div>,
+});
 
 /** Maps sidebar ?view= param to EnterpriseDashboard tab names */
 function viewToTab(view: string | null): string | undefined {
   if (!view) return undefined;
   const map: Record<string, string> = {
+    products: "ProductTwin",
     twin: "ProductTwin",
     validation: "Validation",
     health: "Health Score",
@@ -19,11 +37,14 @@ function viewToTab(view: string | null): string | undefined {
     rag: "RAG",
     conflicts: "Validation", // conflicts are shown in Validation tab
     export: "Export",
+    graph: "Knowledge Graph",
+    explainability: "Explainability",
   };
   return map[view];
 }
 
 function HomeContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const view = searchParams.get("view");
   const productParam = searchParams.get("product");
@@ -40,32 +61,17 @@ function HomeContent() {
     if (tab) setInitialTab(tab);
   }, [view, productParam]);
 
+  useEffect(() => {
+    if (view === "settings") {
+      router.replace("/settings");
+    }
+  }, [view, router]);
+
   // Upload Center view
   if (view === "upload") {
     return (
       <div className="p-4 lg:p-6 max-w-[1600px] mx-auto">
         <UploadCenter />
-      </div>
-    );
-  }
-
-  // Settings view — redirect to /settings page
-  if (view === "settings") {
-    return (
-      <div className="p-4 lg:p-6 max-w-[1600px] mx-auto space-y-6">
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Settings</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Manage your account and workspace preferences.</p>
-          </div>
-          <div className="rounded-lg border p-6" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
-            <h2 className="text-base font-semibold mb-3" style={{ color: "var(--text-primary)" }}>Account</h2>
-            <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>Account settings are managed through Firebase Authentication.</p>
-            <Link href="/settings" className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white" style={{ background: "var(--accent-primary)" }}>
-              Open Full Settings
-            </Link>
-          </div>
-        </div>
       </div>
     );
   }

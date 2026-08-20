@@ -1,0 +1,21 @@
+  ▲ Next.js 14.2.15
+  - Local:        http://localhost:3099
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 8.8s   Reload env: .env
+   Reload env: .env
+ 44.3s (2891 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 15.3s (2897 modules)
+ GET /login 200 in 193ms
+ GET / 200 in 857ms
+(node:32296) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ GET /?view=health 200 in 376ms
+   Reload env: .env
+ ✓ Compiled in 9.9s (1393 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 4.1s (415 modules)
+   Reload env: .env
+ ✓ Compiled in 9.5s (1808 modules)

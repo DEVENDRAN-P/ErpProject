@@ -28,6 +28,7 @@ from backend.status import canonical_status, STATUS_PENDING, STATUS_OPEN
 router = APIRouter()
 
 
+@router.get("", response_model=List[ProductRead])
 @router.get("/", response_model=List[ProductRead])
 def list_products(
     q: str | None = Query(None, description="Search query"),

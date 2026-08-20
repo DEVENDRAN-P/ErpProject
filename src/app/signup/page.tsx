@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { Sparkles } from "lucide-react";
 
 export default function SignupPage() {
   const { register, registerWithGoogle } = useAuth();
@@ -35,10 +36,12 @@ export default function SignupPage() {
     <main className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--bg-page)" }}>
       <div className="w-full max-w-[400px] space-y-8 page-enter">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl text-white text-base font-bold" style={{ background: "var(--accent-primary)" }}>PP</div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-md" style={{ background: "linear-gradient(135deg, #6366F1 0%, #2563EB 100%)" }}>
+            <Sparkles size={24} className="text-white" />
+          </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Create your account</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Start managing product intelligence</p>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Create your ProductPilot AI account</h1>
+            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Start managing product data intelligence</p>
           </div>
         </div>
 

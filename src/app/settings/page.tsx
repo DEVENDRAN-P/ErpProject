@@ -3,8 +3,9 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Camera, Upload, CheckCircle } from "lucide-react";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function SettingsPage() {
+function SettingsContent() {
   const { user, updateProfilePhoto, resetPassword } = useAuth();
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoSuccess, setPhotoSuccess] = useState(false);
@@ -206,5 +207,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <ProtectedRoute>
+      <SettingsContent />
+    </ProtectedRoute>
   );
 }

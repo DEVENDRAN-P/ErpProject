@@ -2,10 +2,10 @@
 title ProductPilot AI - Starting Services
 
 echo Starting Backend...
-start "Backend" cmd /c "cd /d %~dp0 && .venv\\Scripts\\activate && uvicorn backend.main:app --reload"
+start "Backend" cmd /k "cd /d %~dp0 && .venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000"
 
 echo Starting Frontend...
-start "Frontend" cmd /c "cd /d %~dp0 && npm run dev"
+start "Frontend" cmd /k "cd /d %~dp0 && npm run dev"
 
 echo.
 echo Services starting:

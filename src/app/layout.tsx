@@ -14,18 +14,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <AuthProvider>
-          <AppShell>
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
-                <div className="flex flex-col items-center gap-3">
-                  <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--neutral-200)]" style={{ borderTopColor: "var(--accent-primary)" }} />
-                  <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Loading…</span>
+          <Suspense fallback={null}>
+            <AppShell>
+              <Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--neutral-200)]" style={{ borderTopColor: "var(--accent-primary)" }} />
+                    <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Loading…</span>
+                  </div>
                 </div>
-              </div>
-            }>
-              {children}
-            </Suspense>
-          </AppShell>
+              }>
+                {children}
+              </Suspense>
+            </AppShell>
+          </Suspense>
         </AuthProvider>
       </body>
     </html>

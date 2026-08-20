@@ -15,8 +15,7 @@ import {
   User,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth, db, storage } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -206,11 +205,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth.currentUser) throw new Error("Not authenticated.");
     const uid = auth.currentUser.uid;
 
-    // Upload to Firebase Storage: profile-photos/{uid}/{filename}
-    const ext = file.name.split(".").pop() || "jpg";
-    const storageRef = ref(storage, `profile-photos/${uid}/avatar.${ext}`);
-    const snapshot = await uploadBytes(storageRef, file, { contentType: file.type });
-    const downloadURL = await getDownloadURL(snapshot.ref);
+    // Convert file to Base64 Data URL instead of using paid Firebase Storage
+    const downloadURL = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (e) => reject(new Error("Failed to read image file."));
+      reader.readAsDataURL(file);
+    });
 
     // Update Firebase Auth profile
     await updateProfile(auth.currentUser, { photoURL: downloadURL });

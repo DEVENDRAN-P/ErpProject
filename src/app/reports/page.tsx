@@ -26,7 +26,9 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
   );
 }
 
-export default function ReportsPage() {
+import ProtectedRoute from "@/components/ProtectedRoute";
+
+function ReportsContent() {
   const [quality, setQuality] = useState<DataQualityResponse | null>(null);
   const [compliance, setCompliance] = useState<ComplianceReportResponse | null>(null);
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
@@ -248,5 +250,13 @@ export default function ReportsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <ProtectedRoute>
+      <ReportsContent />
+    </ProtectedRoute>
   );
 }
