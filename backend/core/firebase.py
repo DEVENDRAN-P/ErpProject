@@ -44,11 +44,14 @@ def _get_firebase_creds():
     client_email = os.environ.get("FIREBASE_CLIENT_EMAIL")
     private_key = os.environ.get("FIREBASE_PRIVATE_KEY")
     if project_id and client_email and private_key:
+        # Normalize newlines: the private key may contain literal "\\n" strings
+        # instead of actual newline characters (common when set via .env files).
+        normalized_key = private_key.replace("\\n", "\n")
         info = {
             "type": "service_account",
             "project_id": project_id,
             "client_email": client_email,
-            "private_key": private_key.replace("\\n", "\n"),
+            "private_key": normalized_key,
         }
         return credentials.Certificate(info)
 

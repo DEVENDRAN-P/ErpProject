@@ -126,10 +126,20 @@ async def get_current_user(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Token has expired. Please sign in again.",
                 )
+            # Safely extract display name from Firebase JWT claims
+            display_name = payload.get("name") or payload.get("display_name")
+            if not display_name:
+                try:
+                    identities = payload.get("firebase", {}).get("identities", {})
+                    email_list = identities.get("email", [])
+                    if isinstance(email_list, list) and email_list:
+                        display_name = email_list[0].split("@")[0]
+                except (AttributeError, IndexError, TypeError):
+                    pass
             return AuthenticatedUser(
                 uid=payload["uid"],
                 email=payload.get("email", ""),
-                display_name=payload.get("name") or payload.get("firebase", {}).get("identities", {}).get("email", [""])[0] if isinstance(payload.get("firebase", {}).get("identities", {}).get("email"), list) else payload.get("name"),
+                display_name=display_name,
             )
 
     # --- Strategy 3: Legacy JWT (backward compatibility) ---

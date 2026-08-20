@@ -69,23 +69,33 @@ function friendlyAuthError(error: any): string {
   return error?.message || "An unexpected error occurred. Please try again.";
 }
 
-/** Save or update user profile in Firestore. */
+/** Save or update user profile in Firestore.
+ *  Gracefully handles permission errors when Firestore rules are not deployed. */
 async function saveUserProfile(user: User, extra?: Record<string, any>) {
-  const userRef = doc(db, "users", user.uid);
-  const existing = await getDoc(userRef);
-  const data: Record<string, any> = {
-    uid: user.uid,
-    email: user.email?.toLowerCase() || "",
-    displayName: user.displayName || "",
-    photoURL: user.photoURL || null,
-    role: "user",
-    updatedAt: serverTimestamp(),
-    ...extra,
-  };
-  if (!existing.exists()) {
-    data.createdAt = serverTimestamp();
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const existing = await getDoc(userRef);
+    const data: Record<string, any> = {
+      uid: user.uid,
+      email: user.email?.toLowerCase() || "",
+      displayName: user.displayName || "",
+      photoURL: user.photoURL || null,
+      role: "user",
+      updatedAt: serverTimestamp(),
+      ...extra,
+    };
+    if (!existing.exists()) {
+      data.createdAt = serverTimestamp();
+    }
+    await setDoc(userRef, data, { merge: true });
+  } catch (err: any) {
+    // Firestore rules may not be deployed yet — silently continue
+    if (err?.code === "permission-denied" || err?.message?.includes("permissions")) {
+      console.warn("Firestore: permission denied — rules may not be deployed.", err.message);
+      return;
+    }
+    throw err;
   }
-  await setDoc(userRef, data, { merge: true });
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -98,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getRedirectResult(auth)
       .then(async (result) => {
         if (result?.user) {
-          await saveUserProfile(result.user, { authProvider: "google" });
+          await saveUserProfile(result.user, { authProvider: "google" }).catch(() => {});
         }
       })
       .catch(() => {
@@ -124,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       // Save/update user profile in Firestore
-      await saveUserProfile(result.user, { authProvider: "google" });
+      await saveUserProfile(result.user, { authProvider: "google" }).catch(() => {});
     } catch (err: any) {
       // If popup is blocked (COOP policy) or fails, fall back to redirect
       if (
@@ -162,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const registerWithGoogle = useCallback(async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      await saveUserProfile(result.user, { authProvider: "google" });
+      await saveUserProfile(result.user, { authProvider: "google" }).catch(() => {});
     } catch (err: any) {
       if (
         err.code === "auth/popup-blocked" ||
@@ -205,9 +215,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Update Firebase Auth profile
     await updateProfile(auth.currentUser, { photoURL: downloadURL });
 
-    // Update Firestore document
-    const userRef = doc(db, "users", uid);
-    await setDoc(userRef, { photoURL: downloadURL, updatedAt: serverTimestamp() }, { merge: true });
+    // Update Firestore document (gracefully handle permission errors)
+    try {
+      const userRef = doc(db, "users", uid);
+      await setDoc(userRef, { photoURL: downloadURL, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (err: any) {
+      if (err?.code !== "permission-denied") throw err;
+      // Firestore rules not deployed — continue without Firestore write
+    }
 
     // Force re-render with updated photo
     setUser({ ...auth.currentUser! });

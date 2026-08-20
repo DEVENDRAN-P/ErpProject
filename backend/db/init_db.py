@@ -6,7 +6,10 @@ from sqlalchemy import text
 from backend.db.base import Base
 from backend.db.session import engine, SessionLocal
 from backend.models.user import User
-from backend.models.product import Product, ProductAttribute, ReviewItem, ProductVersion, ProductTruthConflict
+from backend.models.product import (
+    Product, ProductAttribute, ReviewItem, ProductVersion, ProductTruthConflict,
+    ProductRelationship, ExplanationLog, Notification,
+)
 from backend.reference_data import load_reference_data
 from backend.status import canonical_status
 
@@ -285,6 +288,24 @@ def seed_demo_data(db) -> None:
         )
     ]
     db.add_all(demo_versions)
+
+    # Seed demo notifications for the demo user
+    demo_notifications = [
+        Notification(
+            user_id="demo-user",
+            type="system",
+            title="Welcome to ProductPilot AI",
+            message="Your product intelligence workspace is ready. Upload your first datasheet to get started.",
+        ),
+        Notification(
+            user_id="demo-user",
+            type="conflict",
+            title="Conflict Detected: Max Operating Temperature",
+            message="A data conflict was detected for the Siemens motor. Datasheet says 155°C, web catalog says 130°C.",
+            product_id=demo_product.id,
+        ),
+    ]
+    db.add_all(demo_notifications)
 
     db.commit()
     print("Demo industrial motor dataset seeded.")

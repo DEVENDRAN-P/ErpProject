@@ -14,16 +14,20 @@ import {
   Search, RefreshCw, FileJson, Box, FileSpreadsheet, Upload, Plus,
   Package, Activity, AlertTriangle, CheckCircle, XCircle, Clock,
   ChevronRight, ExternalLink, ArrowLeft, MessageSquare, History,
-  Shield, GitBranch, Database, Eye, Edit2
+  Shield, GitBranch, Database, Eye, Edit2, Network, Brain, BarChart3,
+  FileUp, Bell
 } from "lucide-react";
 import { StatusBadgeFromStatus, HealthGauge, KpiCard, SkeletonDashboard, SkeletonTable,
   EmptyState, ErrorState, PageHeader } from "@/components/ui";
+import KnowledgeGraphTab from "@/components/KnowledgeGraphTab";
+import ExplainabilityTab from "@/components/ExplainabilityTab";
+import NotificationBell from "@/components/NotificationBell";
 
 // ─── Product Truth & Validation ────────────────────────────────────
 function ValidationTab({ product }: { product: ProductRead }) {
   const conflicts = product.conflicts || [];
-  const missing = product.attributes.filter(a => a.status === "missing");
-  const conflictAttrs = product.attributes.filter(a => a.status === "conflict");
+  const missing = product.attributes.filter(a => (a.status || "").toUpperCase() === "NOT_FOUND");
+  const conflictAttrs = product.attributes.filter(a => (a.status || "").toUpperCase() === "CONFLICT");
 
   return (
     <div className="space-y-8">
@@ -180,8 +184,8 @@ function HumanReviewTab({ product, onRefresh }: { product: ProductRead; onRefres
     } catch (e: any) { setMsg(e.message); } finally { setLoading(null); }
   };
 
-  const pending = product.review_items.filter(r => r.status === "pending");
-  const done = product.review_items.filter(r => r.status !== "pending");
+  const pending = product.review_items.filter(r => (r.status || "").toUpperCase() === "PENDING");
+  const done = product.review_items.filter(r => (r.status || "").toUpperCase() !== "PENDING");
 
   return (
     <div className="space-y-5">
@@ -429,7 +433,7 @@ function RagTab({ product }: { product: ProductRead }) {
 }
 
 // ─── Main Dashboard ────────────────────────────────────────────────
-const TABS = ["ProductTwin", "Validation", "Health Score", "Human Review", "CatalogPilot", "RAG", "Export"] as const;
+const TABS = ["ProductTwin", "Validation", "Health Score", "Human Review", "CatalogPilot", "RAG", "Export", "Knowledge Graph", "Explainability"] as const;
 type Tab = typeof TABS[number];
 
 const TAB_ICONS: Record<Tab, React.ReactNode> = {
@@ -440,6 +444,8 @@ const TAB_ICONS: Record<Tab, React.ReactNode> = {
   "CatalogPilot": <History size={14} />,
   "RAG": <MessageSquare size={14} />,
   "Export": <FileJson size={14} />,
+  "Knowledge Graph": <Network size={14} />,
+  "Explainability": <Brain size={14} />,
 };
 
 export default function EnterpriseDashboard({ initialProductId, initialTab }: { initialProductId?: number; initialTab?: string }) {
@@ -490,9 +496,22 @@ export default function EnterpriseDashboard({ initialProductId, initialTab }: { 
   return (
     <div className="space-y-6 page-enter">
       {/* Welcome */}
-      <div>
-        <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{getGreeting()}, {user?.displayName?.split(" ")[0] || "User"}</h1>
-        <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Here&apos;s the current state of your product intelligence workspace.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{getGreeting()}, {user?.displayName?.split(" ")[0] || "User"}</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Here&apos;s the current state of your product intelligence workspace.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <a href="/reports" className="h-8 rounded-lg border px-3 text-xs font-medium flex items-center gap-1.5 transition"
+            style={{ borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>
+            <BarChart3 size={14} />Reports
+          </a>
+          <a href="/batch" className="h-8 rounded-lg border px-3 text-xs font-medium flex items-center gap-1.5 transition"
+            style={{ borderColor: "var(--border-default)", color: "var(--text-secondary)" }}>
+            <FileUp size={14} />Batch
+          </a>
+          <NotificationBell />
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -650,6 +669,8 @@ export default function EnterpriseDashboard({ initialProductId, initialTab }: { 
             {activeTab === "CatalogPilot" && <CatalogPilotTab product={selected} />}
             {activeTab === "RAG" && <RagTab product={selected} />}
             {activeTab === "Export" && <ExportTab product={selected} />}
+            {activeTab === "Knowledge Graph" && <KnowledgeGraphTab productId={selected.id} />}
+            {activeTab === "Explainability" && <ExplainabilityTab productId={selected.id} />}
           </div>
         </div>
       )}

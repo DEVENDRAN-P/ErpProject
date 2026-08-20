@@ -98,16 +98,25 @@ export default function UploadCenter() {
       { label: "Creating ProductTwin", status: "pending" },
     ]);
     try {
-      const downloadURL = await uploadToFirebaseStorage(file, user.uid);
-      setSteps(s => s.map((st, i) => i === 0 ? { ...st, status: "done" } : i === 1 ? { ...st, status: "active" } : st));
+      // Try Firebase Storage upload in background — don't block processing if it fails
+      let downloadURL = "";
+      try {
+        downloadURL = await uploadToFirebaseStorage(file, user.uid);
+        setSteps(s => s.map((st, i) => i === 0 ? { ...st, status: "done" } : st));
+      } catch (storageErr: any) {
+        console.warn("Firebase Storage upload failed (continuing without cloud backup):", storageErr.message);
+        setSteps(s => s.map((st, i) => i === 0 ? { ...st, status: "done", label: "Cloud storage skipped (not critical)" } : st));
+      }
+
+      setSteps(s => s.map((st, i) => i === 1 ? { ...st, status: "active" } : st));
       const form = new FormData();
       form.append("file", file);
-      form.append("storage_url", downloadURL);
+      if (downloadURL) form.append("storage_url", downloadURL);
       setSteps(s => s.map((st, i) => i === 1 ? { ...st, status: "done" } : i === 2 ? { ...st, status: "active" } : st));
       const res = await processWorkflow(form);
       setSteps(s => s.map((st, i) => i <= 3 ? { ...st, status: "done" } : i === 4 ? { ...st, status: "active" } : st));
       setSteps(s => s.map(st => ({ ...st, status: "done" as const })));
-      setResult({ mode, data: { ...res, storage_url: downloadURL } });
+      setResult({ mode, data: { ...res, ...(downloadURL ? { storage_url: downloadURL } : {}) } });
       if (res?.product?.id) router.push(`/?product=${res.product.id}`);
     } catch (e: any) {
       setError(e.message || "Unable to process workflow.");

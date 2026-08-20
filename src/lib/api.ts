@@ -301,3 +301,168 @@ export function getProductJsonExportUrl(productId: number): string {
 export function getProductCsvExportUrl(productId: number): string {
   return `/api/products/${productId}/export/csv`;
 }
+
+// ─── Team 1: Knowledge Graph API ────────────────────────────────────────
+
+export async function fetchKnowledgeGraph(productId: number) {
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`/api/products/${productId}/knowledge-graph`, { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load knowledge graph.");
+  return payload;
+}
+
+export async function fetchFullKnowledgeGraph() {
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/products/knowledge-graph/full", { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load knowledge graph.");
+  return payload;
+}
+
+export async function queryKnowledgeGraph(queryType: string, entityId?: string, entityType?: string) {
+  const headers = await buildAuthHeaders("application/json");
+  const response = await fetch("/api/products/knowledge-graph/query", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ query_type: queryType, entity_id: entityId, entity_type: entityType }),
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Knowledge graph query failed.");
+  return payload;
+}
+
+// ─── Team 2: Explainability API ─────────────────────────────────────────
+
+export async function fetchExplainability(productId: number) {
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`/api/products/${productId}/explainability`, { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load explainability data.");
+  return payload;
+}
+
+export async function fetchAttributeExplanation(productId: number, attrKey: string) {
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`/api/products/${productId}/explainability/${attrKey}`, { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load attribute explanation.");
+  return payload;
+}
+
+export async function fetchExplainabilityAuditTrail(productId: number) {
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`/api/products/${productId}/explainability/audit-trail`, { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load audit trail.");
+  return payload;
+}
+
+// ─── Team 3: Batch & Reports API ────────────────────────────────────────
+
+export async function batchImportProducts(products: any[]) {
+  const headers = await buildAuthHeaders("application/json");
+  const response = await fetch("/api/products/batch-import", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ products }),
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Batch import failed.");
+  return payload;
+}
+
+export async function batchImportCsv(file: File) {
+  const headers = await getAuthHeader();
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/products/batch-import/csv", {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "CSV import failed.");
+  return payload;
+}
+
+export function getBatchExportUrl(format: string = "json", category?: string): string {
+  const params = new URLSearchParams({ format });
+  if (category) params.set("category", category);
+  return `/api/products/batch-export?${params.toString()}`;
+}
+
+export async function fetchDataQualityReport() {
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/products/reports/data-quality", { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load data quality report.");
+  return payload;
+}
+
+export async function fetchComplianceReport() {
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/products/reports/compliance", { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load compliance report.");
+  return payload;
+}
+
+export async function fetchAuditTrail() {
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/products/reports/audit-trail", { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load audit trail.");
+  return payload;
+}
+
+// ─── Team 4: Notifications API ──────────────────────────────────────────
+
+export async function fetchNotifications(typeFilter?: string, unreadOnly?: boolean) {
+  const params = new URLSearchParams();
+  if (typeFilter) params.set("type_filter", typeFilter);
+  if (unreadOnly) params.set("unread_only", "true");
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`/api/notifications?${params.toString()}`, { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load notifications.");
+  return payload;
+}
+
+export async function fetchUnreadCount() {
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/notifications/unread-count", { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load unread count.");
+  return payload;
+}
+
+export async function markNotificationRead(notificationId: number) {
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`/api/notifications/${notificationId}/read`, {
+    method: "PATCH",
+    headers,
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to mark notification as read.");
+  return payload;
+}
+
+export async function markAllNotificationsRead() {
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/notifications/mark-all-read", {
+    method: "POST",
+    headers,
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to mark all as read.");
+  return payload;
+}
+
+export async function fetchActivityFeed(limit = 20) {
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`/api/activity-feed?limit=${limit}`, { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) throw new Error(payload?.detail || "Failed to load activity feed.");
+  return payload;
+}
