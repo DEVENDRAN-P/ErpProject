@@ -737,7 +737,7 @@ class TestE2EDemo:
 
         # Step 1: Ingest a product
         text = (
-            "Siemens MTR-E2E-001 Motor. Rated Power: 15 kW. "
+            "Siemens MTR9901-099 Motor. Rated Power: 15 kW. "
             "Supply Voltage: 415 V. Rated Current: 28.5 A. "
             "Efficiency Class: IE3 Premium. Rated Speed: 1475 rpm. "
             "Frame Size: 160M. Max Operating Temperature: 155 degC."
@@ -765,7 +765,7 @@ class TestE2EDemo:
         assert round(valid / len(required) * 100, 1) == 87.5
 
         # Step 5: Add conflicting source
-        text2 = "Siemens MTR-E2E-001 Motor. Rated Power: 18.5 kW. Max Operating Temperature: 130 C."
+        text2 = "Siemens MTR9901-099 Motor. Rated Power: 18.5 kW. Max Operating Temperature: 130 C."
         r2 = client.post("/api/workflow/process", data={"text": text2}, headers=headers)
         assert r2.json()["product"]["id"] == pid
         assert r2.json()["product"]["conflicts_created"] >= 1
