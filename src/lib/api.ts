@@ -362,7 +362,7 @@ export async function fetchExplainabilityAuditTrail(productId: number) {
 
 export async function batchImportProducts(products: any[]) {
   const headers = await buildAuthHeaders("application/json");
-  const response = await fetch("/api/products/batch-import", {
+  const response = await fetch("/api/products/batch/import", {
     method: "POST",
     headers,
     body: JSON.stringify({ products }),
@@ -376,7 +376,7 @@ export async function batchImportCsv(file: File) {
   const headers = await getAuthHeader();
   const formData = new FormData();
   formData.append("file", file);
-  const response = await fetch("/api/products/batch-import/csv", {
+  const response = await fetch("/api/products/batch/import/csv", {
     method: "POST",
     headers,
     body: formData,
@@ -389,7 +389,7 @@ export async function batchImportCsv(file: File) {
 export function getBatchExportUrl(format: string = "json", category?: string): string {
   const params = new URLSearchParams({ format });
   if (category) params.set("category", category);
-  return `/api/products/batch-export?${params.toString()}`;
+  return `/api/products/batch/export?${params.toString()}`;
 }
 
 export async function fetchDataQualityReport() {

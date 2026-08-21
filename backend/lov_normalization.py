@@ -288,19 +288,15 @@ def normalize_against_lov(
     attribute_lov_data: Dict[str, Dict[str, str]] | None = None,
 ) -> Dict[str, Any]:
     """Unified LOV normalization entry point. Checks both attribute key and value against the appropriate LOVs."""
-    # First normalize the key
+    # Always normalize both key and value for a complete result
     key_result = normalize_attribute_key(attr_key, attribute_lov_data)
+    val_result = normalize_attribute_value(
+        attr_key, raw_value, category, faucets_data, fittings_data, attribute_lov_data
+    )
 
-    # If key is not found, still try to normalize the value
-    # but mark accordingly
     if key_result["validation_status"] == "NOT_FOUND":
-        # Still attempt value normalization for evidence purposes
-        val_result = normalize_attribute_value(
-            attr_key, raw_value, category, faucets_data, fittings_data, attribute_lov_data
-        )
-        # Combine results - key takes precedence
+        # Key not found — value result takes precedence
         if val_result["validation_status"] == "VERIFIED":
-            # Key was unknown but value was approved - lower confidence
             result = {
                 "raw_value": val_result["raw_value"],
                 "normalized_value": val_result["normalized_value"],
@@ -321,9 +317,10 @@ def normalize_against_lov(
                 "needs_human_review": True,
             }
     else:
+        # Key was found — use key result as primary, merge value if available
         result = {
             "raw_value": raw_value,
-            "normalized_value": key_result.get("normalized_value") or val_result.get("normalized_value") if 'val_result' in dir() else None,
+            "normalized_value": key_result.get("normalized_value") or val_result.get("normalized_value"),
             "normalization_type": "ATTRIBUTE_KEY_VALUE",
             "confidence": key_result["confidence"],
             "matched_reference": key_result["matched_reference"],

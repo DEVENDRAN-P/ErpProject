@@ -273,6 +273,20 @@ def merge_source_into_product(
             )
             db.add(new_attr)
 
+            # Determine recommended value: prefer the higher-confidence source
+            existing_conf = existing.confidence or 0.0
+            new_conf = float(item.get("confidence") or 0.5)
+            if existing_conf >= new_conf:
+                rec_value = f"{existing.value} {existing.unit or ''}".strip()
+                rec_source = existing.source or "existing"
+            else:
+                rec_value = f"{value} {item.get('unit') or existing.unit or ''}".strip()
+                rec_source = source
+            reasoning = (
+                f"Source '{rec_source}' has higher confidence ({max(existing_conf, new_conf):.0%}) "
+                f"than the alternative. A human review is recommended to confirm."
+            )
+
             conflict = ProductTruthConflict(
                 product_id=product.id,
                 attribute_key=key,
@@ -293,6 +307,8 @@ def merge_source_into_product(
                         "page": item.get("page") or 1,
                     },
                 ]),
+                recommended_value=rec_value,
+                reasoning=reasoning,
                 status=STATUS_OPEN,
             )
             db.add(conflict)

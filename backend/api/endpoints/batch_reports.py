@@ -93,7 +93,7 @@ def _product_to_dict(product: Product) -> Dict[str, Any]:
 
 # ─── Batch Import ────────────────────────────────────────────────────────
 
-@router.post("/batch-import", response_model=BatchImportResponse)
+@router.post("/batch/import", response_model=BatchImportResponse)
 def batch_import_products(
     import_data: BatchImportInput,
     db: Session = Depends(get_db),
@@ -145,7 +145,7 @@ def batch_import_products(
     )
 
 
-@router.post("/batch-import/csv")
+@router.post("/batch/import/csv")
 def batch_import_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -197,7 +197,7 @@ def batch_import_csv(
 
 # ─── Batch Export ─────────────────────────────────────────────────────────
 
-@router.get("/batch-export")
+@router.get("/batch/export")
 def batch_export_products(
     format: str = "json",
     category: str | None = None,

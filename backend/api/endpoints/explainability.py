@@ -42,6 +42,35 @@ def _product_to_dict(product: Product) -> Dict[str, Any]:
     }
 
 
+@router.get("/{product_id}/explainability/audit-trail")
+def get_explainability_audit_trail(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+) -> list:
+    """Get the explanation audit trail for a product."""
+    logs = (
+        db.query(ExplanationLog)
+        .filter(ExplanationLog.product_id == product_id)
+        .order_by(ExplanationLog.created_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": log.id,
+            "attribute_key": log.attribute_key,
+            "attribute_label": log.attribute_label,
+            "extraction_method": log.extraction_method,
+            "confidence_score": log.confidence_score,
+            "chosen_value": log.chosen_value,
+            "source_document": log.source_document,
+            "created_at": log.created_at.isoformat() if log.created_at else None,
+        }
+        for log in logs
+    ]
+
+
 @router.get("/{product_id}/explainability", response_model=ExplainabilityResponse)
 def get_product_explainability(
     product_id: int,
@@ -155,32 +184,3 @@ def get_attribute_explanation(
         db.commit()
 
     return explanation
-
-
-@router.get("/{product_id}/explainability/audit-trail")
-def get_explainability_audit_trail(
-    product_id: int,
-    db: Session = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user),
-) -> list:
-    """Get the explanation audit trail for a product."""
-    logs = (
-        db.query(ExplanationLog)
-        .filter(ExplanationLog.product_id == product_id)
-        .order_by(ExplanationLog.created_at.desc())
-        .all()
-    )
-
-    return [
-        {
-            "id": log.id,
-            "attribute_key": log.attribute_key,
-            "attribute_label": log.attribute_label,
-            "extraction_method": log.extraction_method,
-            "confidence_score": log.confidence_score,
-            "chosen_value": log.chosen_value,
-            "source_document": log.source_document,
-            "created_at": log.created_at.isoformat() if log.created_at else None,
-        }
-        for log in logs
-    ]
