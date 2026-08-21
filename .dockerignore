@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Build output
+.next/
+out/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local databases & logs
+*.db
+*.sqlite3
+backend.log
+frontend_run.log
+backend_run.log
+
+# Environment / secrets
+.env
+.env.local
+.env.production
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Python
+*.egg-info/
+dist/
+build/
+
+# Generated files
+demo_data/
+*.xlsx
+
+# Docker files (avoid recursive copying)
+Dockerfile.*
+docker-compose.yml
+
+# Documentation
+README.md
+LICENSE
