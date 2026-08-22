@@ -1,6 +1,9 @@
 import os
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
