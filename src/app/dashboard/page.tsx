@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -128,7 +128,9 @@ function HomeContent() {
 export default function Home() {
   return (
     <ProtectedRoute>
-      <HomeContent />
+      <Suspense fallback={<div className="p-6"><div className="skeleton h-64 rounded-lg" /></div>}>
+        <HomeContent />
+      </Suspense>
     </ProtectedRoute>
   );
 }
