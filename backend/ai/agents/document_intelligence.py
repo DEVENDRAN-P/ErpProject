@@ -70,7 +70,7 @@ def parse_url(url: str) -> Dict[str, Any]:
     try:
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ProductPilotAI/1.0"}
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NexGenAI/1.0"}
         )
         with urllib.request.urlopen(req, timeout=10) as response:
             html_content = response.read().decode("utf-8", errors="ignore")

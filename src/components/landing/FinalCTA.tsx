@@ -35,7 +35,7 @@ export default function FinalCTA() {
             href="/signup"
             className="inline-flex items-center gap-2 px-8 py-4 text-sm font-bold text-blue-700 bg-white hover:bg-blue-50 rounded-xl shadow-xl shadow-black/10 transition-all"
           >
-            Get Started with ProductPilot
+            Get Started with NexGen
             <ChevronRight size={16} />
           </Link>
           <a

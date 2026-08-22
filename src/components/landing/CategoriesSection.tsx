@@ -24,7 +24,7 @@ export default function CategoriesSection() {
             Built Beyond Motors.
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            ProductPilot AI is category-agnostic and designed to scale across industrial product catalogs.
+            NexGen is category-agnostic and designed to scale across industrial product catalogs.
           </p>
         </div>
 

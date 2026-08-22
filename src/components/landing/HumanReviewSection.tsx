@@ -82,7 +82,7 @@ export default function HumanReviewSection() {
               AI Finds the Problem.<br />Humans Make the Final Call.
             </h2>
             <p className="text-lg text-gray-500 leading-relaxed mb-6">
-              ProductPilot flags conflicts, missing data, and low-confidence values for human review.
+              NexGen flags conflicts, missing data, and low-confidence values for human review.
               Every decision is recorded in an audit trail.
             </p>
             <div className="space-y-3">

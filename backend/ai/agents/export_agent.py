@@ -61,7 +61,7 @@ def export_products_json(products: List[Dict[str, Any]]) -> Dict[str, Any]:
     export_data = {
         "metadata": {
             "exported_at": now,
-            "format": "productpilot-batch-export",
+            "format": "nexgen-batch-export",
             "version": "1.0",
             "total_products": len(products),
             "provenance_note": "Every attribute carries source, page, evidence, and confidence for full auditability.",

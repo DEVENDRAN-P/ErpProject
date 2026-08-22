@@ -22,7 +22,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           <div className="animate-pulse">
             <Logo size={40} />
           </div>
-          <span className="text-sm text-gray-500">Loading ProductPilot…</span>
+          <span className="text-sm text-gray-500">Loading NexGen…</span>
         </div>
       </div>
     );

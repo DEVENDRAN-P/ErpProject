@@ -1,4 +1,4 @@
-"""Pytest fixtures for ProductPilot AI backend tests.
+"""Pytest fixtures for NexGen backend tests.
 
 Uses an isolated temporary SQLite database so tests never touch the
 development database and work from a clean environment.
@@ -9,7 +9,7 @@ import sys
 import tempfile
 
 # Must be set before any backend import so db/session.py binds the test DB.
-_TMP_DB_FD, _TMP_DB_PATH = tempfile.mkstemp(suffix=".db", prefix="productpilot_test_")
+_TMP_DB_FD, _TMP_DB_PATH = tempfile.mkstemp(suffix=".db", prefix="nexgen_test_")
 os.close(_TMP_DB_FD)
 os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB_PATH.replace(os.sep, '/')}"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-not-for-production"
@@ -47,7 +47,7 @@ def db_session():
 @pytest.fixture(scope="session")
 def auth_headers(client):
     """Register + login a test user and return Authorization headers."""
-    email = "tester@productpilot.ai"
+    email = "tester@nexgen.ai"
     password = "testpass123"
 
     # Create the user directly (fast, deterministic)

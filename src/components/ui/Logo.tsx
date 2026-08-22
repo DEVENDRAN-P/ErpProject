@@ -11,7 +11,7 @@ type LogoProps = {
 };
 
 /**
- * Custom SVG logo for ProductPilot AI.
+ * Custom SVG logo for NexGen.
  * A stylized cube representing "product" with a neural-network accent representing "AI".
  * Automatically adapts to dark mode via `prefers-color-scheme` or manual `dark` prop.
  */
@@ -131,7 +131,7 @@ export default function Logo({ size = 32, showText = false, className = "", dark
             className="font-bold tracking-tight leading-tight flex items-center gap-1.5"
             style={{ fontSize: Math.max(11, size * 0.42), color: "var(--text-primary)" }}
           >
-            ProductPilot
+            NexGen
             <span
               className="font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 border border-blue-500/20 dark:bg-blue-400/10 dark:text-blue-400 dark:border-blue-400/20"
               style={{ fontSize: Math.max(8, size * 0.28) }}

@@ -82,7 +82,7 @@ function HomeContent() {
       <div className="p-4 lg:p-6 max-w-[1600px] mx-auto space-y-6">
         <div>
           <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Help & Support</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>ProductPilot AI — AI-Powered Product Intelligence for Industrial Commerce</p>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>NexGen — AI-Powered Product Intelligence for Industrial Commerce</p>
         </div>
         <div className="rounded-lg border p-6 space-y-4" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
           <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Getting Started</h2>
@@ -96,7 +96,7 @@ function HomeContent() {
           <h2 className="text-base font-semibold pt-2" style={{ color: "var(--text-primary)" }}>Health Score</h2>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>The Product Health Score (0–100) is calculated as: 40% Completeness + 30% Consistency + 20% Confidence + 10% Source Reliability.</p>
           <h2 className="text-base font-semibold pt-2" style={{ color: "var(--text-primary)" }}>Non-Hallucination Principle</h2>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>ProductPilot AI never invents specifications. If a value cannot be found in your source documents, it is marked as &ldquo;Insufficient Evidence&rdquo; rather than generating a plausible value.</p>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>NexGen never invents specifications. If a value cannot be found in your source documents, it is marked as &ldquo;Insufficient Evidence&rdquo; rather than generating a plausible value.</p>
         </div>
       </div>
     );

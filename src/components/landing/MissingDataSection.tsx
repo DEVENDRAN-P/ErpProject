@@ -14,15 +14,15 @@ export default function MissingDataSection() {
           <div ref={r1.ref} className={`${r1.className}`} style={r1.style}>
             <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3">Trust Feature</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
-              If There Is No Evidence,<br />ProductPilot Says So.
+              If There Is No Evidence,<br />NexGen Says So.
             </h2>
             <p className="text-lg text-gray-500 leading-relaxed mb-6">
-              ProductPilot does not invent technical specifications. Missing information
+              NexGen does not invent technical specifications. Missing information
               remains explicitly unresolved until supporting evidence is found.
             </p>
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600">
               <Shield size={16} />
-              <span>A core trust principle of ProductPilot AI</span>
+              <span>A core trust principle of NexGen</span>
             </div>
           </div>
 

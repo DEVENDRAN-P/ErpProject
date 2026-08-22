@@ -21,7 +21,7 @@ export default function RAGSection() {
               Ask Your Product Data a Question.
             </h2>
             <p className="text-lg text-gray-500 leading-relaxed mb-6">
-              ProductPilot retrieves supporting evidence from indexed product documents
+              NexGen retrieves supporting evidence from indexed product documents
               before generating answers. Every response is backed by traceable source material.
             </p>
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">

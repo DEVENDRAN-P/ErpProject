@@ -27,7 +27,7 @@ export default function ExportSection() {
 
             {/* Flow */}
             <div className="flex flex-wrap items-center gap-3">
-              <div className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg">ProductPilot AI</div>
+              <div className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg">NexGen</div>
               <ArrowRight size={16} className="text-gray-300" />
               <div className="px-4 py-2 bg-gray-100 border border-gray-200 text-gray-700 text-sm font-bold rounded-lg">JSON / CSV</div>
               <ArrowRight size={16} className="text-gray-300" />

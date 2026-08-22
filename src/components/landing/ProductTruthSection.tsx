@@ -95,7 +95,7 @@ export default function ProductTruthSection() {
               {/* Trust note */}
               <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-400">
                 <Shield size={12} />
-                <span>ProductPilot NEVER silently overwrites conflicting values.</span>
+                <span>NexGen NEVER silently overwrites conflicting values.</span>
               </div>
             </div>
           </div>

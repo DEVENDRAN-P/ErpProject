@@ -216,14 +216,14 @@ def batch_export_products(
         return Response(
             content=csv_content,
             media_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename=productpilot_batch_export.csv"},
+            headers={"Content-Disposition": "attachment; filename=nexgen_batch_export.csv"},
         )
     else:
         json_data = export_products_json(product_dicts)
         return Response(
             content=json.dumps(json_data, indent=2),
             media_type="application/json",
-            headers={"Content-Disposition": "attachment; filename=productpilot_batch_export.json"},
+            headers={"Content-Disposition": "attachment; filename=nexgen_batch_export.json"},
         )
 
 

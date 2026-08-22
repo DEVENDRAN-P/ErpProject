@@ -61,7 +61,7 @@ export default function Footer() {
                 <circle cx="28" cy="42" r="2.5" fill="white" opacity="0.7" />
               </svg>
               <span className="font-bold text-white text-sm">
-                ProductPilot
+                NexGen
                 <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 uppercase">AI</span>
               </span>
             </div>
@@ -93,7 +93,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-600">
-            &copy; 2026 ProductPilot AI. All rights reserved.
+            &copy; 2026 NexGen. All rights reserved.
           </p>
           <p className="text-xs text-gray-600">
             AI-powered product intelligence for industrial commerce.

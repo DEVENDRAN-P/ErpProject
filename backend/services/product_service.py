@@ -468,7 +468,7 @@ def process_human_review_action(
     }[action_key]
 
     item.status = canonical_action
-    item.reviewer = reviewer or "reviewer@productpilot.ai"
+    item.reviewer = reviewer or "reviewer@nexgen.ai"
     item.reason = comment
     item.reviewed_at = datetime.utcnow()
 

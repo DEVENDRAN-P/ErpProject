@@ -120,7 +120,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <div className="animate-pulse">
             <Logo size={36} />
           </div>
-          <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Loading ProductPilot…</span>
+          <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Loading NexGen…</span>
         </div>
       </div>
     );

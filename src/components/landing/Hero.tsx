@@ -116,7 +116,7 @@ export default function Hero() {
 
             {/* Description */}
             <p className="text-lg text-gray-500 leading-relaxed max-w-xl mb-8">
-              ProductPilot AI transforms PDFs, web catalogs, images, CSVs, and manual data
+              NexGen transforms PDFs, web catalogs, images, CSVs, and manual data
               into structured, validated, evidence-backed product information ready for
               commerce, ERP, and PIM systems.
             </p>

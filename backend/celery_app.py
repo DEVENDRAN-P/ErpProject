@@ -7,7 +7,7 @@ from backend.core.config import settings
 
 if Celery is not None:
     celery = Celery(
-        "productpilot",
+        "nexgen",
         broker=settings.redis_url,
         backend=settings.redis_url,
     )

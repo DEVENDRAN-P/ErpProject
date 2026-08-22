@@ -76,7 +76,7 @@
 
   <!-- Text -->
   <text x="340" y="260" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white" letter-spacing="-1">
-    ProductPilot
+    NexGen
   </text>
   <text x="340" y="310" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white" letter-spacing="-1">
     AI
@@ -93,7 +93,7 @@
 
   <!-- Bottom URL -->
   <text x="100" y="580" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="18" font-weight="500" fill="#475569">
-    productpilot.ai
+    nexgen.ai
   </text>
 
   <!-- Decorative accent line -->

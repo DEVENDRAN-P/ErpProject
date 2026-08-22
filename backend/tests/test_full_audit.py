@@ -1,4 +1,4 @@
-"""Comprehensive end-to-end audit test for ProductPilot AI.
+"""Comprehensive end-to-end audit test for NexGen.
 
 Tests every feature area from the specification:
 - Auth, DB, Ingestion, ProductTwin, ProductTruth, Missing Data, RAG,
@@ -34,7 +34,7 @@ def client():
 
 @pytest.fixture(scope="module")
 def auth_token(client):
-    email = "audit_tester@productpilot.ai"
+    email = "audit_tester@nexgen.ai"
     password = "auditpass123"
     db = SessionLocal()
     try:
@@ -68,7 +68,7 @@ class TestAuth:
     def test_root(self, client):
         r = client.get("/")
         assert r.status_code == 200
-        assert "ProductPilot" in r.json()["message"]
+        assert "NexGen" in r.json()["message"]
 
     def test_register_and_login(self, client):
         r = client.post("/api/auth/register", json={

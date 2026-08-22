@@ -38,4 +38,4 @@ app.include_router(api_router, prefix=settings.api_prefix)
 
 @app.get("/")
 def root() -> dict[str, str]:
-    return {"message": "ProductPilot AI backend is running."}
+    return {"message": "NexGen backend is running."}

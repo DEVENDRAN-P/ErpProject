@@ -8,8 +8,8 @@ import Logo from '@/components/ui/Logo';
 
 export const metadata: Metadata = {
   title: {
-    default: 'ProductPilot AI — Enterprise Product Intelligence',
-    template: '%s | ProductPilot AI',
+    default: 'NexGen — Enterprise Product Intelligence',
+    template: '%s | NexGen',
   },
   description: 'AI-powered industrial product data intelligence. Extract, validate, and enrich product specifications from datasheets, PDFs, and catalogs.',
   icons: {
@@ -18,27 +18,27 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'ProductPilot AI',
-    title: 'ProductPilot AI — Enterprise Product Intelligence',
+    siteName: 'NexGen',
+    title: 'NexGen — Enterprise Product Intelligence',
     description: 'AI-powered industrial product data intelligence. Extract, validate, and enrich product specifications from datasheets, PDFs, and catalogs.',
     images: [
       {
         url: '/og-image.svg',
         width: 1200,
         height: 630,
-        alt: 'ProductPilot AI',
+        alt: 'NexGen',
       },
       {
         url: '/og-image-dark.svg',
         width: 1200,
         height: 630,
-        alt: 'ProductPilot AI (Dark)',
+        alt: 'NexGen (Dark)',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ProductPilot AI — Enterprise Product Intelligence',
+    title: 'NexGen — Enterprise Product Intelligence',
     description: 'AI-powered industrial product data intelligence. Extract, validate, and enrich product specifications from datasheets, PDFs, and catalogs.',
     images: ['/og-image.svg', '/og-image-dark.svg'],
   },

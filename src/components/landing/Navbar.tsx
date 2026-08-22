@@ -67,7 +67,7 @@ export default function Navbar() {
               </svg>
               <div className="flex flex-col">
                 <span className="font-bold tracking-tight text-[15px] leading-tight text-gray-900">
-                  ProductPilot
+                  NexGen
                   <span className="ml-1 font-extrabold text-xs px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100 uppercase">
                     AI
                   </span>

@@ -1,4 +1,4 @@
-"""Canonical Status Vocabulary for ProductPilot AI.
+"""Canonical Status Vocabulary for NexGen.
 
 Single source of truth for attribute / review / conflict status values used
 across backend, database, API, and frontend. The canonical vocabulary is

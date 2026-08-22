@@ -34,7 +34,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-3">
           <Logo size={48} />
           <div className="text-center">
-            <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Sign in to ProductPilot AI</h1>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Sign in to NexGen</h1>
             <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Enterprise Product Data Intelligence</p>
           </div>
         </div>

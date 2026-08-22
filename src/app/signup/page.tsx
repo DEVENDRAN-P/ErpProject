@@ -38,7 +38,7 @@ export default function SignupPage() {
         <div className="flex flex-col items-center gap-3">
           <Logo size={48} />
           <div className="text-center">
-            <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Create your ProductPilot AI account</h1>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Create your NexGen account</h1>
             <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Start managing product data intelligence</p>
           </div>
         </div>
