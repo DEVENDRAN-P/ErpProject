@@ -94,11 +94,10 @@ export default function UploadCenter() {
       setSteps(s => s.map((st, i) => i <= 2 ? { ...st, status: "done" } : i === 3 ? { ...st, status: "active" } : st));
       setSteps(s => s.map(st => ({ ...st, status: "done" as const })));
       setResult({ mode, data: res });
-      if (res?.product?.id) router.push(`/?product=${res.product.id}`);
     } catch (e: any) {
       setError(e.message || "Unable to process workflow.");
     } finally { setLoading(false); }
-  }, [file, mode, router]);
+  }, [file, mode]);
 
   const handleUrlIngest = useCallback(async () => {
     if (!url.trim()) return;
@@ -117,9 +116,8 @@ export default function UploadCenter() {
       const pipeline = await processWorkflow(form);
       setSteps(s => s.map(st => ({ ...st, status: "done" as const })));
       setResult({ mode: "url", data: { ...res, pipeline } });
-      if (pipeline?.product?.id) router.push(`/?product=${pipeline.product.id}`);
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
-  }, [url, router]);
+  }, [url]);
 
   const handleManualSubmit = useCallback(async () => {
     if (!manualName.trim()) { setManualMessage("Product name is required."); return; }
@@ -134,11 +132,10 @@ export default function UploadCenter() {
         attributes, review_items: attributes.filter(a => !a.value).map(a => ({ title: `Missing: ${a.label} (${a.unit})`, item_type: "missing", description: `Required specification '${a.label}' not entered.`, action: "Add value", status: "pending" })),
       };
       const created = await ingestProduct(product);
-      setManualMessage("✓ Product created. Opening ProductTwin…");
-      setResult({ mode: "manual", data: created });
-      if (created?.id) router.push(`/?product=${created.id}`);
+      setManualMessage("✓ Product created successfully. Review results below or click to open dashboard.");
+      setResult({ mode: "manual", data: { product: created, validated_attributes: attributes } });
     } catch (e: any) { setError(e.message || "Unable to create product."); } finally { setLoading(false); }
-  }, [manualName, manualModel, manualCategory, manualValues, router]);
+  }, [manualName, manualModel, manualCategory, manualValues]);
 
   return (
     <div className="space-y-6 page-enter">
@@ -274,7 +271,7 @@ export default function UploadCenter() {
       {error && <ErrorState message={error} />}
 
       {/* Results */}
-      {result && result.mode !== "manual" && (
+      {result && (
         <div className="rounded-xl border p-6 space-y-4 shadow-sm" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
           
           {/* Header Banner */}
