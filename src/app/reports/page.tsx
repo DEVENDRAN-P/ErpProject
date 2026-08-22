@@ -126,26 +126,28 @@ function ReportsContent() {
             </div>
 
             {/* Health Distribution */}
-            <div className="rounded-lg border p-5" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
-              <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Health Distribution</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs w-24" style={{ color: "var(--text-secondary)" }}>Excellent (80+)</span>
-                  <MiniBar value={quality.health_distribution.excellent} max={quality.total_products} color="var(--color-success)" />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs w-24" style={{ color: "var(--text-secondary)" }}>Attention (60-79)</span>
-                  <MiniBar value={quality.health_distribution.attention} max={quality.total_products} color="var(--color-warning)" />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs w-24" style={{ color: "var(--text-secondary)" }}>Needs Review (&lt;60)</span>
-                  <MiniBar value={quality.health_distribution.needs_review} max={quality.total_products} color="var(--color-error)" />
+            {quality.health_distribution && (
+              <div className="rounded-lg border p-5" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
+                <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Health Distribution</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs w-24" style={{ color: "var(--text-secondary)" }}>Excellent (80+)</span>
+                    <MiniBar value={quality.health_distribution?.excellent ?? 0} max={quality.total_products ?? 1} color="var(--color-success)" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs w-24" style={{ color: "var(--text-secondary)" }}>Attention (60-79)</span>
+                    <MiniBar value={quality.health_distribution?.attention ?? 0} max={quality.total_products ?? 1} color="var(--color-warning)" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs w-24" style={{ color: "var(--text-secondary)" }}>Needs Review (&lt;60)</span>
+                    <MiniBar value={quality.health_distribution?.needs_review ?? 0} max={quality.total_products ?? 1} color="var(--color-error)" />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Completeness by Category */}
-            {Object.keys(quality.completeness_by_category).length > 0 && (
+            {quality.completeness_by_category && Object.keys(quality.completeness_by_category).length > 0 && (
               <div className="rounded-lg border p-5" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
                 <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Completeness by Category</h3>
                 <div className="space-y-3">
@@ -153,10 +155,10 @@ function ReportsContent() {
                     <div key={cat}>
                       <div className="flex justify-between text-xs mb-1">
                         <span style={{ color: "var(--text-secondary)" }}>{cat}</span>
-                        <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{data.completeness_pct}%</span>
+                        <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{data?.completeness_pct ?? 0}%</span>
                       </div>
                       <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--neutral-100)" }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${data.completeness_pct}%`, background: data.completeness_pct >= 80 ? "var(--color-success)" : data.completeness_pct >= 60 ? "var(--color-warning)" : "var(--color-error)" }} />
+                        <div className="h-full rounded-full transition-all" style={{ width: `${data?.completeness_pct ?? 0}%`, background: (data?.completeness_pct ?? 0) >= 80 ? "var(--color-success)" : (data?.completeness_pct ?? 0) >= 60 ? "var(--color-warning)" : "var(--color-error)" }} />
                       </div>
                     </div>
                   ))}
@@ -165,7 +167,7 @@ function ReportsContent() {
             )}
 
             {/* Missing Attributes */}
-            {Object.keys(quality.missing_by_attribute).length > 0 && (
+            {quality.missing_by_attribute && Object.keys(quality.missing_by_attribute).length > 0 && (
               <div className="rounded-lg border p-5" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
                 <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Missing Attributes Breakdown</h3>
                 <div className="space-y-2">
