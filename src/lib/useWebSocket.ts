@@ -96,6 +96,11 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
 
   const connect = useCallback(() => {
     if (!userId) return;
+    const isRemoteHost = typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+    if (isRemoteHost && !process.env.NEXT_PUBLIC_WS_URL) {
+      // Skip WebSocket connection on remote Vercel preview when WS server is not configured
+      return;
+    }
     cleanup();
 
     const url = `${wsUrl}?user_id=${encodeURIComponent(userId)}`;
