@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export function extractFromUploadedFile(filename: string) {
+function extractFromUploadedFile(filename: string) {
   const fnameLower = filename.toLowerCase();
 
   const validKeywords = [
