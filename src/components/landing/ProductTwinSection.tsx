@@ -110,25 +110,25 @@ export default function ProductTwinSection() {
         
         {/* Header Badge */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F0FDF4] border border-[#CCFBF1] mb-4">
-            <Shield size={14} className="text-[#0F766E]" />
-            <span className="text-xs font-extrabold uppercase tracking-wider text-[#0F766E]">ProductTwin & Knowledge Graph</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-4">
+            <Shield size={14} className="text-blue-600" />
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">ProductTwin & Knowledge Graph</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0F172A] leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
             Playable ProductTwin & Evidence Graph
           </h2>
-          <p className="mt-3 text-base text-[#64748B]">
+          <p className="mt-3 text-base text-gray-600">
             Click any attribute or node below to inspect real-time evidence quotes, confidence scores, and knowledge graph links.
           </p>
 
           {/* Interactive View Selector */}
-          <div className="mt-6 inline-flex rounded-xl bg-slate-200/80 p-1 border border-slate-200">
+          <div className="mt-6 inline-flex rounded-xl bg-gray-200/80 p-1 border border-gray-200">
             <button
               onClick={() => setActiveTab("twin")}
               className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-bold transition-all ${
                 activeTab === "twin"
-                  ? "bg-white text-[#0F766E] shadow-sm"
-                  : "text-[#64748B] hover:text-[#0F172A]"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               <Database size={14} />
@@ -138,8 +138,8 @@ export default function ProductTwinSection() {
               onClick={() => setActiveTab("graph")}
               className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-bold transition-all ${
                 activeTab === "graph"
-                  ? "bg-white text-[#0F766E] shadow-sm"
-                  : "text-[#64748B] hover:text-[#0F172A]"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               <Share2 size={14} />
@@ -152,28 +152,28 @@ export default function ProductTwinSection() {
           
           {/* Main Card View (Left Column 7 cols) */}
           <div ref={r1.ref} className={`lg:col-span-7 ${r1.className}`} style={r1.style}>
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-gray-200/50 overflow-hidden">
               
               {/* Product Header */}
-              <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+              <div className="px-6 py-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 rounded bg-[#0F766E]/30 text-[#99F6E4] text-[10px] font-extrabold uppercase tracking-wider border border-[#0F766E]/40">
+                    <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-400/30">
                       ProductTwin #101
                     </span>
-                    <span className="text-[10px] text-slate-300 font-mono">1LE1001-1DB43-4AA4</span>
+                    <span className="text-[10px] text-gray-300 font-mono">1LE1001-1DB43-4AA4</span>
                   </div>
-                  <h3 className="text-base font-extrabold text-white">Siemens 1LE1001</h3>
-                  <p className="text-xs text-slate-300">15 kW Industrial Motor</p>
+                  <h3 className="text-base font-bold text-white">Siemens 1LE1001</h3>
+                  <p className="text-xs text-gray-300">15 kW Industrial Motor</p>
                 </div>
 
                 {/* Health Score Gauge */}
                 <div className="flex items-center gap-3 bg-white/10 backdrop-blur px-4 py-2 rounded-xl border border-white/10">
                   <div className="text-right">
-                    <div className="text-[9px] uppercase tracking-wider text-slate-300 font-semibold">Health Score</div>
-                    <div className="text-xl font-black text-[#34D399]">87 <span className="text-xs font-normal text-slate-300">/ 100</span></div>
+                    <div className="text-[9px] uppercase tracking-wider text-gray-300 font-semibold">Health Score</div>
+                    <div className="text-xl font-black text-emerald-400">87 <span className="text-xs font-normal text-gray-300">/ 100</span></div>
                   </div>
-                  <div className="w-10 h-10 rounded-full border-4 border-[#0F766E] border-t-[#D97706] flex items-center justify-center text-[10px] font-bold text-white">
+                  <div className="w-10 h-10 rounded-full border-4 border-emerald-400 border-t-amber-400 flex items-center justify-center text-[10px] font-bold text-white">
                     87%
                   </div>
                 </div>
@@ -181,7 +181,7 @@ export default function ProductTwinSection() {
 
               {/* VIEW 1: PRODUCT TWIN SPEC LIST */}
               {activeTab === "twin" && (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-gray-100">
                   {ATTRS.map((a) => {
                     const isSelected = selectedAttr.key === a.key;
                     return (
@@ -189,7 +189,7 @@ export default function ProductTwinSection() {
                         key={a.key}
                         onClick={() => setSelectedAttr(a)}
                         className={`w-full px-6 py-4 flex items-center justify-between text-left transition-all ${
-                          isSelected ? "bg-[#F0FDF4] border-l-4 border-[#0F766E]" : "hover:bg-slate-50/80"
+                          isSelected ? "bg-blue-50/60 border-l-4 border-blue-600" : "hover:bg-gray-50/80"
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">

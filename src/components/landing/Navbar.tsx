@@ -49,8 +49,8 @@ export default function Navbar() {
               <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
                 <defs>
                   <linearGradient id="pp-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#0F766E" />
-                    <stop offset="100%" stopColor="#115E59" />
+                    <stop offset="0%" stopColor="#2563EB" />
+                    <stop offset="100%" stopColor="#1E40AF" />
                   </linearGradient>
                 </defs>
                 <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#pp-grad)" />
@@ -58,17 +58,17 @@ export default function Navbar() {
                 <path d="M50 25 L75 39 L50 53 L25 39 Z" fill="white" opacity="0.15" />
                 <path d="M75 39 L50 53 L50 77 L75 63 Z" fill="white" opacity="0.2" />
                 <circle cx="50" cy="51" r="5" fill="white" opacity="0.95" />
-                <line x1="50" y1="46" x2="50" y2="30" stroke="#99F6E4" strokeWidth="2" opacity="0.8" strokeLinecap="round" />
-                <line x1="55" y1="51" x2="70" y2="43" stroke="#99F6E4" strokeWidth="2" opacity="0.8" strokeLinecap="round" />
-                <line x1="45" y1="51" x2="30" y2="43" stroke="#99F6E4" strokeWidth="2" opacity="0.8" strokeLinecap="round" />
+                <line x1="50" y1="46" x2="50" y2="30" stroke="#60A5FA" strokeWidth="2" opacity="0.6" strokeLinecap="round" />
+                <line x1="55" y1="51" x2="70" y2="43" stroke="#60A5FA" strokeWidth="2" opacity="0.6" strokeLinecap="round" />
+                <line x1="45" y1="51" x2="30" y2="43" stroke="#60A5FA" strokeWidth="2" opacity="0.6" strokeLinecap="round" />
                 <circle cx="50" cy="28" r="2.5" fill="white" opacity="0.8" />
                 <circle cx="72" cy="42" r="2.5" fill="white" opacity="0.7" />
                 <circle cx="28" cy="42" r="2.5" fill="white" opacity="0.7" />
               </svg>
               <div className="flex flex-col">
-                <span className="font-bold tracking-tight text-[15px] leading-tight text-[#0F172A]">
+                <span className="font-bold tracking-tight text-[15px] leading-tight text-gray-900">
                   NexGen
-                  <span className="ml-1 font-extrabold text-xs px-1.5 py-0.5 rounded-md bg-[#F0FDF4] text-[#0F766E] border border-[#CCFBF1] uppercase">
+                  <span className="ml-1 font-extrabold text-xs px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100 uppercase">
                     AI
                   </span>
                 </span>
@@ -81,7 +81,7 @@ export default function Navbar() {
                 <a
                   key={link.label}
                   href={link.href}
-                  className="px-3 py-2 text-[13px] font-semibold text-[#64748B] hover:text-[#0F172A] rounded-lg hover:bg-slate-100/60 transition-all"
+                  className="px-3 py-2 text-[13px] font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-all"
                 >
                   {link.label}
                 </a>
@@ -92,13 +92,13 @@ export default function Navbar() {
             <div className="hidden lg:flex items-center gap-3">
               <Link
                 href="/login"
-                className="px-4 py-2 text-[13px] font-semibold text-[#64748B] hover:text-[#0F172A] rounded-lg hover:bg-slate-100/60 transition-all"
+                className="px-4 py-2 text-[13px] font-medium text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-all"
               >
                 Sign In
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-extrabold tracking-wide uppercase text-white bg-[#0F766E] hover:bg-[#115E59] rounded-xl shadow-md shadow-[#0F766E]/20 transition-all"
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm shadow-blue-500/20 transition-all"
               >
                 Get Started
                 <ChevronRight size={14} />
