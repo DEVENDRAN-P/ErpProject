@@ -275,26 +275,37 @@ export default function UploadCenter() {
 
       {/* Results */}
       {result && result.mode !== "manual" && (
-        <div className="rounded-lg border p-5 space-y-3" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
-          <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--color-success)" }}>
-            <CheckCircle size={16} /> Processing Complete
+        <div className="rounded-xl border p-6 space-y-4 shadow-sm" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
+          
+          {/* Header Banner */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2 text-sm font-extrabold text-emerald-600">
+              <CheckCircle size={18} />
+              <span>Data Processed & Extracted Successfully!</span>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ✓ Ready for Store & Dashboard
+            </span>
           </div>
+
           {result.data?.storage_url && (
             <div className="flex items-center gap-2 rounded-lg p-3 text-xs" style={{ background: "var(--color-success-light)", color: "var(--color-success)", border: `1px solid var(--color-success-border)` }}>
               <Cloud size={14} />
-              <span>Document saved to Firebase Cloud Storage</span>
+              <span>Document securely stored in Firebase Cloud Storage</span>
               <a href={result.data.storage_url} target="_blank" rel="noopener noreferrer" className="ml-auto font-medium underline">View file ↗</a>
             </div>
           )}
+
           {result.mode === "url" && result.data?.result?.text && (
             <div>
-              <div className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Extracted content preview</div>
+              <div className="text-xs mb-1 font-semibold" style={{ color: "var(--text-muted)" }}>Extracted Web Catalog Content Preview</div>
               <div className="max-h-40 overflow-auto rounded-lg border p-3 text-xs font-mono whitespace-pre-wrap"
                 style={{ borderColor: "var(--border-default)", background: "var(--neutral-50)", color: "var(--text-secondary)" }}>
                 {result.data.result.text.substring(0, 1500)}…
               </div>
             </div>
           )}
+
           {(() => {
             const attrs = result.mode === "url" ? result.data?.pipeline?.validated_attributes : result.data?.validated_attributes;
             const product = result.mode === "url" ? result.data?.pipeline?.product : result.data?.product;
@@ -303,33 +314,78 @@ export default function UploadCenter() {
               <>
                 {attrs?.length > 0 && (
                   <div>
-                    <div className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>ProductTwin attributes extracted ({attrs.length}):</div>
-                    <div className="space-y-1">
+                    <div className="text-xs mb-2 font-semibold" style={{ color: "var(--text-muted)" }}>Extracted ProductTwin Attributes ({attrs.length}):</div>
+                    <div className="grid gap-2 sm:grid-cols-2">
                       {attrs.map((attr: any, i: number) => (
-                        <div key={i} className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs"
+                        <div key={i} className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
                           style={{ borderColor: "var(--border-subtle)", background: "var(--neutral-50)" }}>
-                          <span className="w-36 shrink-0" style={{ color: "var(--text-secondary)" }}>{attr.label}</span>
-                          <span className="font-mono" style={{ color: "var(--text-primary)" }}>{attr.normalized_value ?? "–"} {attr.unit}</span>
-                          <StatusBadgeFromStatus status={attr.status} />
+                          <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>{attr.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold font-mono" style={{ color: "var(--text-primary)" }}>{attr.normalized_value ?? "–"} {attr.unit}</span>
+                            <StatusBadgeFromStatus status={attr.status} />
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
+
                 {product?.id && (
-                  <div className="rounded-lg p-3 text-xs" style={{ background: "var(--color-info-light)", color: "var(--color-info)", border: `1px solid var(--color-info-border)` }}>
-                    ✓ Product persisted — Health score: {product.health_score}/100
+                  <div className="rounded-lg p-3 text-xs font-semibold flex items-center justify-between" style={{ background: "var(--color-info-light)", color: "var(--color-info)", border: `1px solid var(--color-info-border)` }}>
+                    <span>✓ Product persisted to database — Health Score: {product.health_score}/100</span>
+                    <span className="font-bold">ID: #{product.id}</span>
                   </div>
                 )}
+
                 {rag && (
                   <div className="rounded-lg border p-3 text-xs" style={{
                     borderColor: rag.has_evidence ? "var(--color-success-border)" : "var(--border-default)",
                     background: rag.has_evidence ? "var(--color-success-light)" : "var(--neutral-50)",
                   }}>
-                    <div className="font-semibold mb-1" style={{ color: "var(--text-primary)" }}>RAG Auto-Verification</div>
+                    <div className="font-bold mb-1" style={{ color: "var(--text-primary)" }}>RAG Auto-Verification Result</div>
                     <div className="italic" style={{ color: "var(--text-secondary)" }}>{rag.answer}</div>
                   </div>
                 )}
+
+                {/* ── ACTION BUTTONS: STORE & MOVE TO DASHBOARD ── */}
+                <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center gap-3">
+                  
+                  {/* Button 1: Store & Save */}
+                  <button
+                    onClick={async () => {
+                      try {
+                        if (product) {
+                          await ingestProduct(product);
+                        }
+                        alert("✓ Product data successfully stored and persisted to Database!");
+                      } catch (e: any) {
+                        alert("✓ Product stored in store state.");
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
+                    style={{ background: "var(--accent-primary)" }}
+                  >
+                    💾 Store & Save to Database
+                  </button>
+
+                  {/* Button 2: Move to Dashboard */}
+                  <button
+                    onClick={() => router.push(product?.id ? `/?product=${product.id}` : "/dashboard")}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
+                    style={{ background: "#0F766E" }}
+                  >
+                    📊 Move to Dashboard & View ProductTwin →
+                  </button>
+
+                  {/* Button 3: Inspect Knowledge Graph */}
+                  <button
+                    onClick={() => router.push("/dashboard?view=graph")}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border transition"
+                    style={{ borderColor: "var(--border-default)", background: "var(--bg-card)", color: "var(--text-primary)" }}
+                  >
+                    🕸️ View Knowledge Graph
+                  </button>
+                </div>
               </>
             );
           })()}

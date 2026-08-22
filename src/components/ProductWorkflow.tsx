@@ -134,12 +134,43 @@ export default function ProductWorkflow() {
       ) : null}
 
       {workflowResult ? (
-        <div className="mt-6 rounded-3xl border p-6" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
-          <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Pipeline output</h3>
-          <pre className="mt-4 max-h-96 overflow-auto rounded-2xl border p-4 text-sm"
+        <div className="mt-6 rounded-3xl border p-6 space-y-4" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>✓ Pipeline Output & Verified Data</h3>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Data Analyzed & Ready
+            </span>
+          </div>
+
+          <pre className="max-h-96 overflow-auto rounded-2xl border p-4 text-xs font-mono"
             style={{ borderColor: "var(--border-default)", background: "var(--neutral-50)", color: "var(--text-secondary)" }}>
             {JSON.stringify(workflowResult, null, 2)}
           </pre>
+
+          {/* Action Buttons: Store and Move to Dashboard */}
+          <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleIngest}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
+              style={{ background: "var(--accent-primary)" }}
+            >
+              💾 Store & Save Product Data
+            </button>
+            <a
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
+              style={{ background: "#0F766E" }}
+            >
+              📊 Move to Dashboard & View ProductTwin →
+            </a>
+            <a
+              href="/dashboard?view=graph"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border transition"
+              style={{ borderColor: "var(--border-default)", background: "var(--bg-card)", color: "var(--text-primary)" }}
+            >
+              🕸️ View Knowledge Graph
+            </a>
+          </div>
         </div>
       ) : null}
     </section>
