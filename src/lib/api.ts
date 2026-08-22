@@ -313,15 +313,184 @@ function createDemoUrlIngestResult(url: string) {
   };
 }
 
-function createDemoRagResult(question: string) {
+export function evaluateRagQuery(question: string, documentContext?: string, productId?: number) {
+  const trimmedQ = (question || "").trim();
+  if (!trimmedQ) {
+    return {
+      question: trimmedQ,
+      answer: "Please enter a valid question.",
+      has_evidence: false,
+      confidence: 0.0,
+      sources: [],
+      evidence_snippets: [],
+    };
+  }
+
+  const stopWords = new Set([
+    "what", "is", "the", "a", "an", "and", "or", "of", "to", "in", "for", "on", "with", "this",
+    "that", "it", "at", "by", "from", "as", "are", "was", "were", "be", "been", "being", "have",
+    "has", "had", "do", "does", "did", "can", "could", "should", "would", "which", "who", "whom",
+    "motor", "product", "item", "device", "show", "me", "tell", "about", "give", "detail", "details",
+    "value", "what's", "where", "how", "many", "much"
+  ]);
+
+  const rawTokens = trimmedQ.toLowerCase().match(/\b[a-z0-9_\-.°C]+\b/g) || [];
+  const queryTokens = rawTokens.filter((t) => t.length > 1 && !stopWords.has(t));
+
+  // If query tokens are empty or gibberish (e.g. "ghfhg", "asdf")
+  if (queryTokens.length === 0) {
+    return {
+      question: trimmedQ,
+      answer: "Insufficient evidence found in the document context or product database for this query.",
+      has_evidence: false,
+      confidence: 0.0,
+      sources: [],
+      evidence_snippets: [],
+    };
+  }
+
+  // 1. If documentContext is provided, search inside documentContext
+  if (documentContext && documentContext.trim().length > 0) {
+    const lines = documentContext
+      .split(/\n+|\. /)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 3);
+    const matchedSnippets: string[] = [];
+    let matchScore = 0;
+
+    for (const line of lines) {
+      const lineLower = line.toLowerCase();
+      let lineMatches = 0;
+      for (const token of queryTokens) {
+        if (lineLower.includes(token)) {
+          lineMatches++;
+        }
+      }
+      if (lineMatches > 0) {
+        matchedSnippets.push(line);
+        matchScore += lineMatches;
+      }
+    }
+
+    if (matchedSnippets.length > 0 && matchScore >= 1) {
+      const conf = Math.min(0.98, Math.max(0.65, 0.5 + matchScore * 0.15));
+      return {
+        question: trimmedQ,
+        answer: `Based on the provided document context: ${matchedSnippets.join(" ")}`,
+        has_evidence: true,
+        confidence: Number(conf.toFixed(2)),
+        sources: ["Uploaded Document Context"],
+        evidence_snippets: matchedSnippets.slice(0, 3),
+      };
+    } else {
+      return {
+        question: trimmedQ,
+        answer: "Insufficient evidence in the provided document context for this query.",
+        has_evidence: false,
+        confidence: 0.0,
+        sources: [],
+        evidence_snippets: [],
+      };
+    }
+  }
+
+  // 2. Default Knowledge Base for Siemens 1LE1001 Motor
+  const kbEntries = [
+    {
+      keywords: ["voltage", "volt", "volts", "415v", "400v", "690v", "delta", "star", "supply", "phase"],
+      answerSnippet: "The motor operates at a rated supply voltage of 415 V Delta / 690 V Star @ 50 Hz.",
+      evidence: "Supply voltage: 400V/415V Delta, 690V Star 50Hz",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+    {
+      keywords: ["power", "kw", "15kw", "watt", "hp", "output", "rating", "rated"],
+      answerSnippet: "The motor has a rated output power of 15 kW (20 HP) at 50 Hz.",
+      evidence: "Rated power output: 15 kW @ 50 Hz",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+    {
+      keywords: ["efficiency", "ie3", "class", "92.6%", "loss", "energy", "ie2", "ie4"],
+      answerSnippet: "The motor features an IE3 Premium Efficiency rating (92.6% efficiency compliant with IEC 60034-30-1).",
+      evidence: "Efficiency class IE3 according to IEC 60034-30-1",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+    {
+      keywords: ["speed", "rpm", "1475", "rotation", "nominal", "operating", "frequency", "50hz"],
+      answerSnippet: "The nominal full-load operating speed is 1475 RPM (4-pole configuration at 50 Hz).",
+      evidence: "Nominal speed: 1475 r/min",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+    {
+      keywords: ["enclosure", "ip55", "protection", "ingress", "ip", "dust", "water", "casing"],
+      answerSnippet: "The motor housing features IP55 degree of environmental ingress protection.",
+      evidence: "Degree of protection IP55",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+    {
+      keywords: ["current", "amps", "ampere", "28.5a", "28.5", "load"],
+      answerSnippet: "Full load current rating is 28.5 A at 415 V.",
+      evidence: "Full load current: 28.5 A at 415V",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+    {
+      keywords: ["frame", "size", "160m", "cast", "iron", "mounting"],
+      answerSnippet: "The motor frame is IEC 160M cast iron structure.",
+      evidence: "IEC Frame Size: 160M cast iron structure",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+    {
+      keywords: ["temperature", "thermal", "insulation", "155", "class f", "heat"],
+      answerSnippet: "Thermal insulation class is Class F (155°C maximum temperature rise limit).",
+      evidence: "Thermal Insulation: Class F (155°C max rise limit)",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+    {
+      keywords: ["siemens", "1le1001", "model", "number", "1le1001-1db43-4aa4", "brand", "manufacturer"],
+      answerSnippet: "Siemens 1LE1001 15kW 3-Phase AC Induction Motor (Model: 1LE1001-1DB43-4AA4).",
+      evidence: "Siemens 1LE1001 15kW 3-Phase Industrial Motor",
+      source: "Siemens_1LE1001_Datasheet.pdf",
+    },
+  ];
+
+  const matchedEntries: typeof kbEntries = [];
+  const sourcesSet = new Set<string>();
+  const snippets: string[] = [];
+
+  for (const entry of kbEntries) {
+    const hasMatch = queryTokens.some((qTok) =>
+      entry.keywords.some((kw) => kw.includes(qTok) || qTok.includes(kw))
+    );
+    if (hasMatch) {
+      matchedEntries.push(entry);
+      sourcesSet.add(entry.source);
+      snippets.push(entry.evidence);
+    }
+  }
+
+  if (matchedEntries.length > 0) {
+    const answerText = `Based on the technical datasheet for Siemens 1LE1001: ${matchedEntries.map((e) => e.answerSnippet).join(" ")}`;
+    return {
+      question: trimmedQ,
+      answer: answerText,
+      has_evidence: true,
+      confidence: 0.95,
+      sources: Array.from(sourcesSet),
+      evidence_snippets: snippets,
+    };
+  }
+
   return {
-    question,
-    answer: "Based on the technical datasheet for Siemens 1LE1001, the motor operates at 415 V with an efficiency class of IE3 and nominal speed of 1475 RPM.",
-    has_evidence: true,
-    confidence: 0.95,
-    sources: ["Siemens_1LE1001_Datasheet.pdf"],
-    evidence_snippets: ["Rated power output: 15 kW @ 50 Hz, efficiency class IE3."]
+    question: trimmedQ,
+    answer: "Insufficient evidence found in the technical datasheet or knowledge base to answer this question.",
+    has_evidence: false,
+    confidence: 0.0,
+    sources: [],
+    evidence_snippets: [],
   };
+}
+
+function createDemoRagResult(question: string, documentContext?: string, productId?: number) {
+  return evaluateRagQuery(question, documentContext, productId);
 }
 
 export async function processWorkflow(formData: FormData) {
@@ -392,13 +561,13 @@ export async function queryRag(question: string, documentContext?: string, produ
     const payload = await parseJsonOrText(response);
     if (!response.ok) {
       if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
-      if (response.status === 404 || typeof payload === "string") return createDemoRagResult(question);
+      if (response.status === 404 || typeof payload === "string") return createDemoRagResult(question, documentContext, productId);
       throw new Error(payload?.detail || "RAG query failed.");
     }
     return payload;
   } catch (err: any) {
     if (err.message?.includes("expired")) throw err;
-    return createDemoRagResult(question);
+    return createDemoRagResult(question, documentContext, productId);
   }
 }
 
