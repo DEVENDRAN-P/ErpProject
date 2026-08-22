@@ -182,6 +182,32 @@ def compute_plausibility(
     return result
 
 
+def _is_valid_numeric_value(raw_value: str) -> bool:
+    """Reject section numbers, stray periods, and other non-numeric junk.
+
+    Examples of invalid values:
+      '.'  '8.1.2'  '1.'  '..'  ''
+    Examples of valid values:
+      '15'  '415'  '28.5'  '1,500'
+    """
+    if not raw_value or not raw_value.strip():
+        return False
+    v = raw_value.strip().replace(",", "")
+    # Must contain at least one digit
+    if not re.search(r"\d", v):
+        return False
+    # Reject if it's just a period or multiple periods
+    if v.replace(".", "").strip() == "":
+        return False
+    # Reject section numbers like 8.1.2 (3+ dot-separated groups)
+    if re.match(r"^\d+(\.\d+){2,}$", v):
+        return False
+    # Reject single-digit section numbers followed by dot (e.g. "8.")
+    if re.match(r"^\d+\.$", v):
+        return False
+    return True
+
+
 def extract_attribute_with_context(
     text: str,
     attr_key: str,
@@ -201,9 +227,14 @@ def extract_attribute_with_context(
             context = extract_context(text, match_position, window)
 
             # Try to extract raw value (number with optional unit)
-            value_match = re.search(r"([\d\.\,]+)\s*([a-zA-Z°]*)", value_text)
+            # Require at least one digit — reject junk like ". V" or "8.1.2 A"
+            value_match = re.search(r"(\d[\d\.\,]*)\s*([a-zA-Z°]*)", value_text)
             raw_value = value_match.group(1).strip() if value_match else value_text
             detected_unit = value_match.group(2).strip() if value_match else ""
+
+            # Validate the extracted numeric value
+            if not _is_valid_numeric_value(raw_value):
+                continue  # Skip this match — try next pattern
 
             # Normalize the value - handle decimal comma issues
             normalized_value = raw_value.replace(",", ".")
@@ -359,26 +390,29 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
 
     # Extract all candidate values with their positions for context-aware processing
     # Rated Power: patterns like "15 kW", "200 HP", "Rated Power: 15kW"
+    # Require digits before optional decimal — reject "55 W" from section numbers
     power_patterns = [
-        r"rated\s*power[:\s]+([\d\.\,]+\s*(?:kw|hp|w))",
-        r"([\d\.\,]+\s*(?:kw|hp|w))",
-        r"power[:\s]+([\d\.\,]+)",
+        r"rated\s*power[:\s]+(\d[\d\.\,]*\s*(?:kw|hp|w))",
+        r"(\d[\d\.\,]*\s*(?:kw|hp|w))",
+        r"power[:\s]+(\d[\d\.\,]*)",
     ]
     power_result = extract_attribute_with_context(input_text, "rated_power", power_patterns)
 
     # Supply Voltage: patterns like "415 V", "690V", "Supply Voltage: 415V"
+    # Require digits before optional decimal — reject ". V"
     voltage_patterns = [
-        r"supply\s*voltage[:\s]+([\d\.]+)\s*v",
-        r"([\d\.]+\s*v)",
-        r"voltage[:\s]+([\d\.]+)",
+        r"supply\s*voltage[:\s]+(\d[\d\.]+)\s*v",
+        r"(\d[\d\.]+\s*v)",
+        r"voltage[:\s]+(\d[\d\.]+)",
     ]
     voltage_result = extract_attribute_with_context(input_text, "supply_voltage", voltage_patterns)
 
     # Rated Current: patterns like "38.05 A", "28.5A", "Rated Current: 38.05A"
+    # Require digits before decimal — reject "8.1.2 A" (section numbers)
     current_patterns = [
-        r"rated\s*current[:\s]+([\d\.\,]+\s*a)",
-        r"([\d\.\,]+\s*a\b)",
-        r"current[:\s]+([\d\.\,]+)",
+        r"rated\s*current[:\s]+(\d[\d\.\,]*\s*a)",
+        r"(\d[\d\.\,]*\s*a\b)",
+        r"current[:\s]+(\d[\d\.\,]*)",
     ]
     current_result = extract_attribute_with_context(input_text, "rated_current", current_patterns)
 
@@ -404,15 +438,16 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
 
     # Rated Speed: patterns like "1475 RPM", "1500 rpm", "Rated Speed: 1475 rpm"
     speed_patterns = [
-        r"rated\s*speed[:\s]+([\d\.]+)\s*(?:rpm|1/min)",
-        r"([\d]+\s*rpm\b)",
-        r"speed[:\s]+([\d]+\s*rpm)",
+        r"rated\s*speed[:\s]+(\d[\d\.]+)\s*(?:rpm|1/min)",
+        r"(\d{3,5}\s*rpm\b)",
+        r"speed[:\s]+(\d{3,5}\s*rpm)",
     ]
     speed_result = extract_attribute_with_context(input_text, "rated_speed", speed_patterns)
 
     # Max Temperature: patterns like "155°C", "155 C", "155 degC", "155 deg. C"
-    all_temps = [(m.group(1), m.start()) for m in re.finditer(r"(\d{2,3})\s*(?:°|deg\.?\s*)?\s*c\b", text_lower)]
-    temp_patterns = [r"(\d{2,3})\s*(?:°|deg\.?\s*)?\s*c\b"]
+    # Require 2-3 digits NOT followed by a dot (to avoid section numbers like 8.1)
+    all_temps = [(m.group(1), m.start()) for m in re.finditer(r"(\b\d{2,3}\b)\s*(?:°|deg\.?\s*)?\s*c\b", text_lower)]
+    temp_patterns = [r"(\b\d{2,3}\b)\s*(?:°|deg\.?\s*)?\s*c\b"]
     temp_result = {
         "key": "max_temperature",
         "label": "Max Operating Temperature",
