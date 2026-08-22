@@ -30,10 +30,10 @@ firebase-adminsdk*.json
 # Generated demo artifacts (recreate with demo_data/generate_demo_pdf.py)
 # demo_data/Siemens_1LE1001_Datasheet.pdf
 
-# Temporary test/debug scripts
-test_*.py
-check_*.py
-verify_*.py
+# Temporary test/debug scripts (root only — backend/tests/ is tracked)
+/test_*.py
+/check_*.py
+/verify_*.py
 tsconfig.tsbuildinfo
 *.xlsx
 

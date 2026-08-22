@@ -369,12 +369,19 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
     # Gemini LLM Extraction (using REST API directly to avoid SDK import timeout)
     gemini_key = getattr(settings, "gemini_api_key", None) or os.getenv("GEMINI_API_KEY", "")
     gemini_key_present = bool(gemini_key and gemini_key.strip())
-    print(f"[GEMINI DIAG] key_present={gemini_key_present} key_length={len(gemini_key) if gemini_key else 0}")
+    # Model list: try stable models in order — newest first, fallback to older
+    gemini_models = [
+        m.strip() for m in os.getenv(
+            "GEMINI_MODELS",
+            "gemini-3.6-flash,gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash",
+        ).split(",")
+        if m.strip()
+    ]
+    print(f"[GEMINI DIAG] key_present={gemini_key_present} key_length={len(gemini_key) if gemini_key else 0} models={gemini_models}")
     if gemini_key_present:
         try:
             import urllib.request
             import urllib.error
-            print("[GEMINI DIAG] Sending request via REST API...")
             prompt = (
                 "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
                 "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
@@ -398,35 +405,47 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {"responseMimeType": "application/json"}
             }).encode("utf-8")
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
-            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-            raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            print(f"[GEMINI DIAG] Response received, length={len(raw) if raw else 0}")
-            if raw and "{" in raw:
-                json_str = raw[raw.find("{"):raw.rfind("}")+1]
-                parsed = json.loads(json_str)
-                if "attributes" in parsed and isinstance(parsed["attributes"], list):
-                    print(f"[GEMINI DIAG] SUCCESS - extracted {len(parsed['attributes'])} attributes via Gemini")
-                    return {
-                        "type": "enrichment",
-                        "llm_used": "gemini",
-                        "product_name": input_text[:100],
-                        "attributes": parsed["attributes"],
-                        "applications": parsed.get("applications", []),
-                        "industries": parsed.get("industries", []),
-                        "tags": parsed.get("tags", []),
-                    }
-                else:
-                    print(f"[GEMINI DIAG] Response parsed but no 'attributes' array found")
-            else:
-                print(f"[GEMINI DIAG] Response has no JSON (first 200 chars: {raw[:200] if raw else 'None'})")
-        except urllib.error.HTTPError as e:
-            error_body = e.read().decode("utf-8", errors="ignore")[:200]
-            print(f"[GEMINI DIAG] HTTP error {e.code}: {error_body}")
+
+            for model_name in gemini_models:
+                print(f"[GEMINI DIAG] Trying model: {model_name}")
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+                req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+                try:
+                    with urllib.request.urlopen(req, timeout=60) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+                    raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    print(f"[GEMINI DIAG] Response received from {model_name}, length={len(raw) if raw else 0}")
+                    if raw and "{" in raw:
+                        json_str = raw[raw.find("{"):raw.rfind("}")+1]
+                        parsed = json.loads(json_str)
+                        if "attributes" in parsed and isinstance(parsed["attributes"], list):
+                            print(f"[GEMINI DIAG] SUCCESS - extracted {len(parsed['attributes'])} attributes via Gemini ({model_name})")
+                            return {
+                                "type": "enrichment",
+                                "llm_used": f"gemini-{model_name}",
+                                "product_name": input_text[:100],
+                                "attributes": parsed["attributes"],
+                                "applications": parsed.get("applications", []),
+                                "industries": parsed.get("industries", []),
+                                "tags": parsed.get("tags", []),
+                            }
+                        else:
+                            print(f"[GEMINI DIAG] Response parsed but no 'attributes' array found")
+                    else:
+                        print(f"[GEMINI DIAG] Response has no JSON (first 200 chars: {raw[:200] if raw else 'None'})")
+                    break  # Got a response (even if malformed) — don't try next model
+                except urllib.error.HTTPError as e:
+                    error_body = e.read().decode("utf-8", errors="ignore")[:200]
+                    print(f"[GEMINI DIAG] {model_name} HTTP error {e.code}: {error_body}")
+                    if e.code == 404:
+                        print(f"[GEMINI DIAG] Model {model_name} not available, trying next...")
+                        continue  # Try next model
+                    break  # Non-404 error — stop trying
+                except Exception as e:
+                    print(f"[GEMINI DIAG] {model_name} failed: {type(e).__name__}: {e}")
+                    break
         except Exception as e:
-            print(f"[GEMINI DIAG] Gemini API call failed: {type(e).__name__}: {e}")
+            print(f"[GEMINI DIAG] Gemini setup failed: {type(e).__name__}: {e}")
     else:
         print(f"[GEMINI DIAG] No Gemini key - settings={bool(getattr(settings, 'gemini_api_key', ''))} env={bool(os.getenv('GEMINI_API_KEY'))}")
 
