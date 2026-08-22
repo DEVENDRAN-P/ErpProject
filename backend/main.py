@@ -26,21 +26,19 @@ app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 
 # ── CORS: only allow the configured frontend URL ──────────────────────────
 # Production must set FRONTEND_URL to the actual deployed domain.
-allowed_origins = [settings.frontend_url]
-
-# In development, also allow localhost variants
-if os.environ.get("ENVIRONMENT") != "production":
-    dev_origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ]
-    allowed_origins.extend([o for o in dev_origins if o not in allowed_origins])
+allowed_origins = [
+    settings.frontend_url,
+    "https://nexgenplus-erp.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
