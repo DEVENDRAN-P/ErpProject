@@ -302,7 +302,6 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                 attributes = parsed["attributes"]
                 for attr in attributes:
                     attr_key = attr.get("key", "")
-                    # Ensure required fields exist
                     if "raw_value" not in attr:
                         attr["raw_value"] = attr.get("value")
                     if "normalized_value" not in attr:
@@ -311,7 +310,6 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                         attr["validation"] = {}
                     if "reason" not in attr:
                         attr["reason"] = ""
-                    # Convert status to valid values
                     status = attr.get("status", "verified")
                     if status not in ("verified", "needs_review", "not_found"):
                         attr["status"] = "needs_review"
@@ -323,8 +321,38 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                     "industries": parsed.get("industries", ["Manufacturing", "Oil & Gas", "Water Treatment"]),
                     "tags": parsed.get("tags", ["Industrial Motor", "3-Phase", "IE3"]),
                 }
-        except Exception:
-            pass  # Fall back to rule-based extraction on any LLM call error
+        except Exception as e:
+            print(f"[OPENAI EXTRACTION ERROR] {e}")
+
+    # Gemini LLM Extraction
+    gemini_key = getattr(settings, "gemini_api_key", None) or os.getenv("GEMINI_API_KEY", "")
+    if gemini_key:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_key)
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            prompt = (
+                "Extract structured industrial product specification attributes from the following text into JSON format.\n"
+                "Attributes: rated_power, supply_voltage, rated_current, efficiency_class, rated_speed, max_temperature, frame_size, total_weight.\n"
+                "Return JSON object with top-level key 'attributes' containing an array of objects: {key, label, value, unit, confidence, evidence, status}.\n\n"
+                f"Input text:\n{input_text[:3000]}"
+            )
+            resp = model.generate_content(prompt)
+            raw = resp.text
+            if "{" in raw:
+                json_str = raw[raw.find("{"):raw.rfind("}")+1]
+                parsed = json.loads(json_str)
+                if "attributes" in parsed and isinstance(parsed["attributes"], list):
+                    return {
+                        "type": "enrichment",
+                        "product_name": input_text[:100],
+                        "attributes": parsed["attributes"],
+                        "applications": ["Industrial Pumping", "Compressor Systems", "HVAC Fans"],
+                        "industries": ["Manufacturing", "Oil & Gas", "Water Treatment"],
+                        "tags": ["Industrial Motor", "3-Phase", "IE3"],
+                    }
+        except Exception as e:
+            print(f"[GEMINI EXTRACTION ERROR] {e}")
 
     # Rule-based extraction fallback
     text_lower = input_text.lower()
