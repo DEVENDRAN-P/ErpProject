@@ -127,16 +127,16 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       wsRef.current = null;
 
-      if (autoReconnect && userId) {
-        const delay = Math.min(1000 * 2 ** reconnectAttempt.current, 30_000);
+      const isRemoteHost = typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+      if (autoReconnect && userId && (!isRemoteHost || reconnectAttempt.current < 2)) {
+        const delay = Math.min(2000 * 2 ** reconnectAttempt.current, 30_000);
         reconnectAttempt.current += 1;
         reconnectTimerRef.current = setTimeout(connect, delay);
       }
     };
 
     ws.onerror = () => {
-      // onclose will fire after this
-      ws.close();
+      try { ws.close(); } catch {}
     };
   }, [userId, wsUrl, autoReconnect, cleanup, startHeartbeat]);
 

@@ -69,26 +69,26 @@ export default function SignupPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Full name</label>
-              <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} autoComplete="name"
+              <label htmlFor="signup-name" className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Full name</label>
+              <input id="signup-name" name="name" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} autoComplete="name"
                 className="w-full rounded-lg border px-4 py-2.5 text-sm"
                 style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
+              <label htmlFor="signup-email" className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Email</label>
+              <input id="signup-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
                 className="w-full rounded-lg border px-4 py-2.5 text-sm"
                 style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete="new-password"
+              <label htmlFor="signup-password" className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Password</label>
+              <input id="signup-password" name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete="new-password"
                 className="w-full rounded-lg border px-4 py-2.5 text-sm"
                 style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Confirm password</label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password"
+              <label htmlFor="signup-confirm-password" className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Confirm password</label>
+              <input id="signup-confirm-password" name="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password"
                 className="w-full rounded-lg border px-4 py-2.5 text-sm"
                 style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
             </div>

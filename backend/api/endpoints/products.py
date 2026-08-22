@@ -167,10 +167,18 @@ def upload_product_document(
         raise HTTPException(status_code=400, detail="Invalid filename.")
 
     extracted = parse_document(contents, file.filename)
-    if not extracted.get("text", "").strip():
+    text_content = extracted.get("text", "").lower()
+    if not text_content.strip():
         raise HTTPException(
             status_code=422,
             detail="No text could be extracted from the document. Scanned PDFs require OCR, which is not available for this file.",
+        )
+
+    product_keywords = ["product", "model", "category", "spec", "voltage", "power", "weight", "dimen", "part", "brand", "manufacturer", "sku", "attr", "catalog", "rating", "unit", "item", "input", "output"]
+    if not any(kw in text_content for kw in product_keywords) and len(text_content) > 50:
+        raise HTTPException(
+            status_code=422,
+            detail="Unrelated upload rejected. The document does not appear to contain product catalog or specification data.",
         )
     return {
         "message": "Upload and extraction successful.",

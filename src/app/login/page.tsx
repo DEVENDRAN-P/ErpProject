@@ -68,14 +68,14 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
+              <label htmlFor="login-email" className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Email</label>
+              <input id="login-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
                 className="w-full rounded-lg border px-4 py-2.5 text-sm"
                 style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password"
+              <label htmlFor="login-password" className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Password</label>
+              <input id="login-password" name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password"
                 className="w-full rounded-lg border px-4 py-2.5 text-sm"
                 style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
             </div>

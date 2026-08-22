@@ -34,20 +34,20 @@ export default function AuthForm({ onAuthenticated }: { onAuthenticated: () => v
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+          <label htmlFor="auth-email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+          <input id="auth-email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
             className="input" />
         </div>
         {mode === "register" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
-            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+            <label htmlFor="auth-fullname" className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
+            <input id="auth-fullname" name="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name"
               className="input" />
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
+          <label htmlFor="auth-password" className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+          <input id="auth-password" name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password"
             className="input" />
         </div>
         {error && <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">{error}</div>}

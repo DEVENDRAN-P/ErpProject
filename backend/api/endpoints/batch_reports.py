@@ -158,6 +158,14 @@ def batch_import_csv(
     contents = file.file.read().decode("utf-8")
     reader = csv.DictReader(io.StringIO(contents))
 
+    fieldnames = [f.lower().strip() for f in (reader.fieldnames or [])]
+    valid_indicators = {"name", "product_name", "title", "model_number", "category", "key", "attribute_key"}
+    if not any(indicator in fieldnames for indicator in valid_indicators):
+        raise HTTPException(
+            status_code=400,
+            detail="Unrelated upload rejected. File must contain product catalog columns (e.g., 'name', 'model_number', or 'category')."
+        )
+
     products_data = {}
     for row in reader:
         name = row.get("name", "").strip()

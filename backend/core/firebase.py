@@ -52,6 +52,7 @@ def _get_firebase_creds():
             "project_id": project_id,
             "client_email": client_email,
             "private_key": normalized_key,
+            "token_uri": "https://oauth2.googleapis.com/token",
         }
         return credentials.Certificate(info)
 

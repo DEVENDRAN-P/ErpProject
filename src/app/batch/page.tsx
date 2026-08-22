@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { batchImportCsv, getBatchExportUrl } from "@/lib/api";
+import { batchImportCsv, downloadBatchExport } from "@/lib/api";
 import { ArrowLeft, Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle, X } from "lucide-react";
 import Link from "next/link";
 
@@ -14,7 +14,20 @@ function BatchContent() {
   const [importResult, setImportResult] = useState<any>(null);
   const [error, setError] = useState("");
   const [exportFormat, setExportFormat] = useState("json");
+  const [exporting, setExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    setError("");
+    try {
+      await downloadBatchExport(exportFormat);
+    } catch (e: any) {
+      setError(e.message || "Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -189,16 +202,15 @@ function BatchContent() {
                 </select>
               </div>
 
-              <a
-                href={getBatchExportUrl(exportFormat)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white transition"
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="flex items-center justify-center gap-2 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white transition disabled:opacity-50"
                 style={{ background: "#7C3AED" }}
               >
                 <Download size={14} />
-                Download {exportFormat.toUpperCase()}
-              </a>
+                {exporting ? "Preparing Download…" : `Download ${exportFormat.toUpperCase()}`}
+              </button>
             </div>
 
             <div className="rounded-lg border p-3" style={{ borderColor: "var(--border-default)", background: "var(--neutral-50)" }}>

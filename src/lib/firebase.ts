@@ -13,7 +13,14 @@ const firebaseConfig = {
 
 /** Check if all required Firebase config values are present. */
 function isFirebaseConfigured(): boolean {
-  return !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+  const isConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+  if (!isConfigured && typeof window !== "undefined") {
+    console.warn("Firebase is not configured! Missing NEXT_PUBLIC_FIREBASE_* variables:", {
+      apiKey: firebaseConfig.apiKey ? "OK" : "MISSING",
+      projectId: firebaseConfig.projectId ? "OK" : "MISSING",
+    });
+  }
+  return isConfigured;
 }
 
 // Only initialize Firebase if config is present (prevents build-time crashes on Vercel)

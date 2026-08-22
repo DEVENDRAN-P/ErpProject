@@ -65,8 +65,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Apply rate limiting to each request."""
-        # Skip rate limiting for health checks and root
-        if request.url.path in ("/", "/docs", "/openapi.json"):
+        # Skip rate limiting for health checks, root, and WebSockets (BaseHTTPMiddleware breaks WebSocket handshakes)
+        if request.scope.get("type") == "websocket" or request.url.path in ("/", "/docs", "/openapi.json") or request.url.path.startswith("/api/ws"):
             return await call_next(request)
 
         client_ip = self._get_client_ip(request)

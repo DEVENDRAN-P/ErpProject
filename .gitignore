@@ -16,7 +16,7 @@ __pycache__/
 # Local databases & logs
 *.db
 *.sqlite3
-backend.log
+*.log
 
 # Environment / secrets
 .env
