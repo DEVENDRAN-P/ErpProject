@@ -24,11 +24,11 @@ export default function AuthForm({ onAuthenticated }: { onAuthenticated: () => v
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+    <div className="rounded-xl border p-8 shadow-sm" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900">{mode === "login" ? "Sign in" : "Create account"}</h2>
         <button type="button" onClick={() => setMode(mode === "login" ? "register" : "login")}
-          className="text-sm text-[#2563EB] hover:text-[#1D4ED8]">
+          className="text-sm link">
           {mode === "login" ? "Register instead" : "Already have an account?"}
         </button>
       </div>
@@ -36,22 +36,22 @@ export default function AuthForm({ onAuthenticated }: { onAuthenticated: () => v
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-50" />
+            className="input" />
         </div>
         {mode === "register" && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
             <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-50" />
+              className="input" />
           </div>
         )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-50" />
+            className="input" />
         </div>
         {error && <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">{error}</div>}
-        <button type="submit" className="w-full rounded-lg bg-[#2563EB] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1D4ED8] transition disabled:opacity-50" disabled={loading}>
+        <button type="submit" className="w-full btn-primary py-3" disabled={loading}>
           {loading ? "Submitting…" : mode === "login" ? "Sign in" : "Create account"}
         </button>
       </form>

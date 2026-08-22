@@ -30,7 +30,7 @@ type GraphData = {
 };
 
 const NODE_COLORS: Record<string, string> = {
-  product: "#6366F1",    // indigo-500
+  product: "#2563EB",    // blue-600
   manufacturer: "#8B5CF6", // violet-500
   standard: "#10B981",   // emerald-500
   attribute: "#F59E0B",  // amber-500

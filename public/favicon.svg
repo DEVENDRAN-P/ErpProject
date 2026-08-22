@@ -1,0 +1,70 @@
+<svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .dark { display: none; }
+    @media (prefers-color-scheme: dark) {
+      .light { display: none; }
+      .dark { display: block; }
+    }
+  </style>
+
+  <defs>
+    <linearGradient id="pp-bg" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="pp-bg-dark" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="pp-accent" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A78BFA" />
+      <stop offset="100%" stop-color="#60A5FA" />
+    </linearGradient>
+  </defs>
+
+  <!-- ════════════ LIGHT MODE ════════════ -->
+  <g class="light">
+    <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#pp-bg)" />
+    <path d="M50 25 L75 39 L75 63 L50 77 L25 63 L25 39 Z" fill="none" stroke="white" stroke-width="3" stroke-linejoin="round" opacity="0.35" />
+    <path d="M50 25 L75 39 L50 53 L25 39 Z" fill="white" opacity="0.15" />
+    <path d="M25 39 L50 53 L50 77 L25 63 Z" fill="white" opacity="0.08" />
+    <path d="M75 39 L50 53 L50 77 L75 63 Z" fill="white" opacity="0.2" />
+    <circle cx="50" cy="51" r="5" fill="white" opacity="0.95" />
+    <line x1="50" y1="46" x2="50" y2="30" stroke="url(#pp-accent)" stroke-width="2" opacity="0.6" stroke-linecap="round" />
+    <line x1="55" y1="51" x2="70" y2="43" stroke="url(#pp-accent)" stroke-width="2" opacity="0.6" stroke-linecap="round" />
+    <line x1="45" y1="51" x2="30" y2="43" stroke="url(#pp-accent)" stroke-width="2" opacity="0.6" stroke-linecap="round" />
+    <line x1="50" y1="56" x2="50" y2="70" stroke="url(#pp-accent)" stroke-width="2" opacity="0.5" stroke-linecap="round" />
+    <line x1="55" y1="48" x2="68" y2="36" stroke="url(#pp-accent)" stroke-width="1.5" opacity="0.4" stroke-linecap="round" />
+    <line x1="45" y1="48" x2="32" y2="36" stroke="url(#pp-accent)" stroke-width="1.5" opacity="0.4" stroke-linecap="round" />
+    <circle cx="50" cy="28" r="2.5" fill="white" opacity="0.8" />
+    <circle cx="72" cy="42" r="2.5" fill="white" opacity="0.7" />
+    <circle cx="28" cy="42" r="2.5" fill="white" opacity="0.7" />
+    <circle cx="50" cy="72" r="2" fill="white" opacity="0.6" />
+    <circle cx="70" cy="34" r="2" fill="white" opacity="0.5" />
+    <circle cx="30" cy="34" r="2" fill="white" opacity="0.5" />
+    <path d="M80 16 L82 20 L86 18 L82 22 L84 26 L80 24 L76 26 L78 22 L74 18 L78 20 Z" fill="white" opacity="0.6" />
+  </g>
+
+  <!-- ════════════ DARK MODE ════════════ -->
+  <g class="dark">
+    <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#pp-bg-dark)" />
+    <path d="M50 25 L75 39 L75 63 L50 77 L25 63 L25 39 Z" fill="none" stroke="white" stroke-width="3" stroke-linejoin="round" opacity="0.4" />
+    <path d="M50 25 L75 39 L50 53 L25 39 Z" fill="white" opacity="0.18" />
+    <path d="M25 39 L50 53 L50 77 L25 63 Z" fill="white" opacity="0.1" />
+    <path d="M75 39 L50 53 L50 77 L75 63 Z" fill="white" opacity="0.25" />
+    <circle cx="50" cy="51" r="5" fill="white" opacity="1" />
+    <line x1="50" y1="46" x2="50" y2="30" stroke="url(#pp-accent)" stroke-width="2" opacity="0.7" stroke-linecap="round" />
+    <line x1="55" y1="51" x2="70" y2="43" stroke="url(#pp-accent)" stroke-width="2" opacity="0.7" stroke-linecap="round" />
+    <line x1="45" y1="51" x2="30" y2="43" stroke="url(#pp-accent)" stroke-width="2" opacity="0.7" stroke-linecap="round" />
+    <line x1="50" y1="56" x2="50" y2="70" stroke="url(#pp-accent)" stroke-width="2" opacity="0.6" stroke-linecap="round" />
+    <line x1="55" y1="48" x2="68" y2="36" stroke="url(#pp-accent)" stroke-width="1.5" opacity="0.5" stroke-linecap="round" />
+    <line x1="45" y1="48" x2="32" y2="36" stroke="url(#pp-accent)" stroke-width="1.5" opacity="0.5" stroke-linecap="round" />
+    <circle cx="50" cy="28" r="2.5" fill="white" opacity="0.9" />
+    <circle cx="72" cy="42" r="2.5" fill="white" opacity="0.8" />
+    <circle cx="28" cy="42" r="2.5" fill="white" opacity="0.8" />
+    <circle cx="50" cy="72" r="2" fill="white" opacity="0.7" />
+    <circle cx="70" cy="34" r="2" fill="white" opacity="0.6" />
+    <circle cx="30" cy="34" r="2" fill="white" opacity="0.6" />
+    <path d="M80 16 L82 20 L86 18 L82 22 L84 26 L80 24 L76 26 L78 22 L74 18 L78 20 Z" fill="white" opacity="0.7" />
+  </g>
+</svg>

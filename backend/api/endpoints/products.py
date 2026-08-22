@@ -35,7 +35,7 @@ def list_products(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> List[ProductRead]:
-    query = db.query(Product)
+    query = db.query(Product).filter(Product.created_by == current_user.email)
     if q:
         query = query.filter(
             (Product.name.ilike(f"%{q}%"))
@@ -48,7 +48,7 @@ def list_products(
 @router.get("/stats")
 def dashboard_stats(db: Session = Depends(get_db), current_user: AuthenticatedUser = Depends(get_current_user)) -> Dict[str, Any]:
     """Aggregate dashboard statistics computed from real product data."""
-    products = db.query(Product).all()
+    products = db.query(Product).filter(Product.created_by == current_user.email).all()
     total = len(products)
 
     pending_reviews = 0
@@ -106,7 +106,7 @@ def product_health_breakdown(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return health_score_breakdown(product.attributes, product.conflicts)
@@ -132,9 +132,9 @@ def get_product(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> ProductRead:
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Product not found or access denied")
     return product
 
 
@@ -212,9 +212,9 @@ def export_product_json(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user),
 ):
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     export_payload = {
         "product": {
@@ -250,9 +250,9 @@ def export_product_csv(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user),
 ):
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -296,9 +296,9 @@ def validate_product_endpoint(
     Returns per-attribute and overall results including LOV, UOM, manufacturer,
     required-field, description, evidence, and conflict checks.
     """
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     all_errors: List[str] = []
     all_warnings: List[str] = []

@@ -19,22 +19,8 @@ export default function ProductWorkflow() {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [attributes, setAttributes] = useState([{
-    key: "power",
-    label: "Power",
-    value: "15 kW",
-    confidence: 95,
-    source: "Source placeholder",
-    evidence: "Extracted from document",
-    status: "verified",
-  }] as ProductCreateInput["attributes"]);
-  const [reviewItems, setReviewItems] = useState([{
-    title: "Missing dimensions",
-    item_type: "missing",
-    description: "Dimensions are not available in the source document.",
-    action: "Review",
-    status: "pending",
-  }] as ProductCreateInput["review_items"]);
+  const [attributes, setAttributes] = useState([] as ProductCreateInput["attributes"]);
+  const [reviewItems, setReviewItems] = useState([] as ProductCreateInput["review_items"]);
   const [workflowResult, setWorkflowResult] = useState<ProcessResult | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
 
@@ -79,60 +65,79 @@ export default function ProductWorkflow() {
   }, [workflowResult]);
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
+    <section className="rounded-3xl border p-8" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-white">Product workflow</h2>
-          <p className="text-sm text-slate-400">Ingest product metadata and run the AI processing pipeline.</p>
+          <h2 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>Product workflow</h2>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Ingest product metadata and run the AI processing pipeline.</p>
         </div>
-        <div className="text-sm text-slate-400">Steps completed: {summary.steps}</div>
+        <div className="text-sm" style={{ color: "var(--text-secondary)" }}>Steps completed: {summary.steps}</div>
       </div>
 
       <form onSubmit={handleWorkflow} className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="block text-sm text-slate-300">
+          <label className="block text-sm" style={{ color: "var(--text-secondary)" }}>
             Product name
-            <input value={productName} onChange={(event) => setProductName(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none focus:border-cyan-500" />
+            <input value={productName} onChange={(event) => setProductName(event.target.value)}
+              className="mt-2 w-full rounded-xl border px-4 py-3 text-sm outline-none"
+              style={{ borderColor: "var(--border-default)", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </label>
-          <label className="block text-sm text-slate-300">
+          <label className="block text-sm" style={{ color: "var(--text-secondary)" }}>
             Model number
-            <input value={modelNumber} onChange={(event) => setModelNumber(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none focus:border-cyan-500" />
+            <input value={modelNumber} onChange={(event) => setModelNumber(event.target.value)}
+              className="mt-2 w-full rounded-xl border px-4 py-3 text-sm outline-none"
+              style={{ borderColor: "var(--border-default)", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </label>
-          <label className="block text-sm text-slate-300 md:col-span-2">
+          <label className="block text-sm md:col-span-2" style={{ color: "var(--text-secondary)" }}>
             Category
-            <input value={category} onChange={(event) => setCategory(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none focus:border-cyan-500" />
+            <input value={category} onChange={(event) => setCategory(event.target.value)}
+              className="mt-2 w-full rounded-xl border px-4 py-3 text-sm outline-none"
+              style={{ borderColor: "var(--border-default)", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </label>
-          <label className="block text-sm text-slate-300 md:col-span-2">
+          <label className="block text-sm md:col-span-2" style={{ color: "var(--text-secondary)" }}>
             Description
-            <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none focus:border-cyan-500" />
+            <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4}
+              className="mt-2 w-full rounded-xl border px-4 py-3 text-sm outline-none"
+              style={{ borderColor: "var(--border-default)", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </label>
-          <label className="block text-sm text-slate-300 md:col-span-2">
+          <label className="block text-sm md:col-span-2" style={{ color: "var(--text-secondary)" }}>
             Upload product asset
             <input
               type="file"
               accept=".pdf,.png,.jpg,.jpeg,.webp"
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none file:mr-4 file:rounded-full file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-semibold"
+              className="mt-2 w-full rounded-xl border px-4 py-3 text-sm outline-none file:mr-4 file:rounded-full file:border-0 file:px-4 file:py-2 file:text-sm file:font-semibold"
+              style={{ borderColor: "var(--border-default)", background: "var(--bg-input)", color: "var(--text-primary)" } as any}
             />
           </label>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <button type="button" onClick={handleIngest} className="rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">
+          <button type="button" onClick={handleIngest}
+            className="rounded-xl px-4 py-3 text-sm font-semibold transition"
+            style={{ background: "var(--accent-primary)", color: "var(--text-inverse)" }}>
             Save product
           </button>
-          <button type="submit" className="rounded-xl bg-slate-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-600">
+          <button type="submit"
+            className="rounded-xl border px-4 py-3 text-sm font-semibold transition"
+            style={{ borderColor: "var(--border-default)", background: "var(--bg-card)", color: "var(--text-secondary)" }}>
             Run processing workflow
           </button>
         </div>
       </form>
 
-      {statusMessage ? <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-200">{statusMessage}</div> : null}
+      {statusMessage ? (
+        <div className="mt-6 rounded-2xl border px-4 py-3 text-sm"
+          style={{ borderColor: "var(--border-default)", background: "var(--neutral-50)", color: "var(--text-primary)" }}>
+          {statusMessage}
+        </div>
+      ) : null}
 
       {workflowResult ? (
-        <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950/70 p-6">
-          <h3 className="text-lg font-semibold text-white">Pipeline output</h3>
-          <pre className="mt-4 max-h-96 overflow-auto rounded-2xl border border-slate-800 bg-slate-900/80 p-4 text-sm text-slate-300">
+        <div className="mt-6 rounded-3xl border p-6" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
+          <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Pipeline output</h3>
+          <pre className="mt-4 max-h-96 overflow-auto rounded-2xl border p-4 text-sm"
+            style={{ borderColor: "var(--border-default)", background: "var(--neutral-50)", color: "var(--text-secondary)" }}>
             {JSON.stringify(workflowResult, null, 2)}
           </pre>
         </div>

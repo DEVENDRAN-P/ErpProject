@@ -135,7 +135,7 @@ function HealthTab({ product }: { product: ProductRead }) {
 
   const breakdown = [
     { label: "Completeness", value: Math.round(health.completeness), weight: "40%", color: "var(--accent-primary)" },
-    { label: "Consistency", value: Math.round(health.consistency), weight: "30%", color: "#7C3AED" },
+    { label: "Consistency", value: Math.round(health.consistency), weight: "30%", color: "var(--color-purple)" },
     { label: "Avg. Confidence", value: Math.round(health.confidence), weight: "20%", color: "var(--color-warning)" },
     { label: "Source Reliability", value: Math.round(health.source_reliability), weight: "10%", color: "var(--color-success)" },
   ];
@@ -342,9 +342,9 @@ function ExportTab({ product }: { product: ProductRead }) {
         <a href={getProductCsvExportUrl(product.id)} target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-4 rounded-lg border p-5 transition group"
           style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ background: "#F5F3FF", color: "#7C3AED" }}><FileSpreadsheet size={20} /></div>
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ background: "var(--color-purple-light)", color: "var(--color-purple)" }}><FileSpreadsheet size={20} /></div>
           <div>
-            <div className="font-semibold text-sm" style={{ color: "#7C3AED" }}>Export CSV</div>
+            <div className="font-semibold text-sm" style={{ color: "var(--color-purple)" }}>Export CSV</div>
             <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Spreadsheet / ERP import</div>
           </div>
         </a>
@@ -561,7 +561,7 @@ export default function EnterpriseDashboard({ initialProductId, initialTab }: { 
           <KpiCard label="Avg Health" value={stats?.average_health_score ? `${stats.average_health_score}%` : undefined} icon={<Activity size={16} />} color="var(--color-success)" loading={statsLoading} />
           <KpiCard label="Needs Review" value={stats?.products_requiring_review} icon={<Eye size={16} />} color="var(--color-warning)" loading={statsLoading} />
           <KpiCard label="Missing Specs" value={stats?.missing_attributes} icon={<XCircle size={16} />} color="var(--color-error)" loading={statsLoading} />
-          <KpiCard label="Conflicts" value={stats?.open_conflicts} icon={<AlertTriangle size={16} />} color="#7C3AED" loading={statsLoading} />
+          <KpiCard label="Conflicts" value={stats?.open_conflicts} icon={<AlertTriangle size={16} />} color="var(--color-purple)" loading={statsLoading} />
           <KpiCard label="Pending Reviews" value={stats?.pending_reviews} icon={<Clock size={16} />} color="var(--color-info)" loading={statsLoading} />
         </div>
       )}

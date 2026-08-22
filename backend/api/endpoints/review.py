@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from backend.api.dependencies import get_current_user, get_db, AuthenticatedUser
 from backend.schemas.product import ReviewActionInput
+from backend.models.product import ReviewItem
 
 from backend.services.product_service import process_human_review_action
 
@@ -23,6 +24,15 @@ def execute_review_action(
 
     if normalized_action not in ("approved", "rejected", "edited"):
         raise HTTPException(status_code=422, detail=f"Unsupported review action: {action_input.action}. Use approve, reject, or edit.")
+
+    # Verify the review item belongs to the current user's product
+    review_item = db.query(ReviewItem).filter(ReviewItem.id == review_id).first()
+    if not review_item:
+        raise HTTPException(status_code=404, detail="Review item not found.")
+    from backend.models.product import Product
+    product = db.query(Product).filter(Product.id == review_item.product_id, Product.created_by == current_user.email).first()
+    if not product:
+        raise HTTPException(status_code=403, detail="Not authorized to review this item.")
 
     try:
         res = process_human_review_action(

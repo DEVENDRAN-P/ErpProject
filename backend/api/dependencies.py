@@ -156,15 +156,6 @@ async def get_current_user(
         except Exception:
             pass
 
-    # --- Strategy 4: Dev Fallback User ---
-    # Return a demo user in local dev mode so pages load without 401 errors
-    if not os.environ.get("STRICT_AUTH"):
-        return AuthenticatedUser(
-            uid="demo_user_123",
-            email="demo@unihack.com",
-            display_name="Demo User",
-        )
-
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Missing or invalid authentication credentials.",

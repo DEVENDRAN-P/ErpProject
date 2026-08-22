@@ -40,9 +40,9 @@ def execute_rag_query(
     document_text = query_input.document_context
 
     if query_input.product_id is not None:
-        product = db.query(Product).filter(Product.id == query_input.product_id).first()
+        product = db.query(Product).filter(Product.id == query_input.product_id, Product.created_by == current_user.email).first()
         if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail="Product not found or access denied")
         product_context = _build_product_context(product)
         # Prefer product-derived context; fall back to any pasted context
         document_text = product_context if not document_text else f"{product_context}\n{document_text}"

@@ -52,9 +52,9 @@ def get_product_knowledge_graph(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> KnowledgeGraphResponse:
     """Get the knowledge graph for a specific product."""
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     product_dict = _product_to_dict(product)
     graph_data = build_graph_nodes_edges([product_dict])
@@ -77,7 +77,7 @@ def get_full_knowledge_graph(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> KnowledgeGraphResponse:
     """Get the complete knowledge graph across all products."""
-    products = db.query(Product).all()
+    products = db.query(Product).filter(Product.created_by == current_user.email).all()
     product_dicts = [_product_to_dict(p) for p in products]
     graph_data = build_graph_nodes_edges(product_dicts)
 
@@ -101,7 +101,7 @@ def query_knowledge_graph(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Query the knowledge graph for related entities."""
-    products = db.query(Product).all()
+    products = db.query(Product).filter(Product.created_by == current_user.email).all()
     product_dicts = [_product_to_dict(p) for p in products]
     graph_data = build_graph_nodes_edges(product_dicts)
 

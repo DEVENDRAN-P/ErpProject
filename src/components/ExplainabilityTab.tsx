@@ -7,7 +7,7 @@ import { Eye, ChevronDown, ChevronRight, FileText, Cpu, Layers, AlertTriangle, C
 
 const METHOD_LABELS: Record<string, { label: string; color: string }> = {
   rule_based: { label: "Rule-Based", color: "var(--color-success)" },
-  llm: { label: "LLM", color: "#7C3AED" },
+  llm: { label: "LLM", color: "var(--color-purple)" },
   hybrid: { label: "Hybrid", color: "var(--accent-primary)" },
 };
 
@@ -187,7 +187,7 @@ export default function ExplainabilityTab({ productId }: { productId: number }) 
           <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{data.summary.rule_based_extractions} rule-based</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Cpu size={12} style={{ color: "#7C3AED" }} />
+          <Cpu size={12} style={{ color: "var(--color-purple)" }} />
           <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{data.summary.llm_extractions} LLM</span>
         </div>
       </div>

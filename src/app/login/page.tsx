@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { Sparkles } from "lucide-react";
+import Logo from "@/components/ui/Logo";
 
 export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
@@ -17,13 +17,13 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null); setLoading(true);
-    try { await login(email, password); router.push("/"); }
+    try { await login(email, password); router.push("/dashboard"); }
     catch (err: any) { setError(err.message); } finally { setLoading(false); }
   };
 
   const handleGoogle = async () => {
     setError(null); setGoogleLoading(true);
-    try { await loginWithGoogle(); router.push("/"); }
+    try { await loginWithGoogle(); router.push("/dashboard"); }
     catch (err: any) { setError(err.message); } finally { setGoogleLoading(false); }
   };
 
@@ -32,9 +32,7 @@ export default function LoginPage() {
       <div className="w-full max-w-[400px] space-y-8 page-enter">
         {/* Brand */}
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-md" style={{ background: "linear-gradient(135deg, #6366F1 0%, #2563EB 100%)" }}>
-            <Sparkles size={24} className="text-white" />
-          </div>
+          <Logo size={48} />
           <div className="text-center">
             <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Sign in to ProductPilot AI</h1>
             <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Enterprise Product Data Intelligence</p>

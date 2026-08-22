@@ -205,7 +205,7 @@ def batch_export_products(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Export all products as CSV or JSON with full provenance."""
-    query = db.query(Product)
+    query = db.query(Product).filter(Product.created_by == current_user.email)
     if category:
         query = query.filter(Product.category == category)
     products = query.all()
@@ -235,7 +235,7 @@ def get_data_quality_report(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Get aggregate data quality metrics across all products."""
-    products = db.query(Product).all()
+    products = db.query(Product).filter(Product.created_by == current_user.email).all()
     product_dicts = [_product_to_dict(p) for p in products]
     return compute_data_quality_metrics(product_dicts)
 
@@ -246,7 +246,7 @@ def get_compliance_report(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Get compliance status by category."""
-    products = db.query(Product).all()
+    products = db.query(Product).filter(Product.created_by == current_user.email).all()
     product_dicts = [_product_to_dict(p) for p in products]
     return compute_compliance_report(product_dicts)
 
@@ -257,6 +257,6 @@ def get_audit_trail(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> List[Dict[str, Any]]:
     """Get all review actions with timestamps."""
-    products = db.query(Product).all()
+    products = db.query(Product).filter(Product.created_by == current_user.email).all()
     product_dicts = [_product_to_dict(p) for p in products]
     return compute_audit_trail(product_dicts)

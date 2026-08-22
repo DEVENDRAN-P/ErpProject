@@ -1,0 +1,98 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="og-bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+    <linearGradient id="og-accent" x1="0" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#og-bg)" />
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.05">
+    <line x1="0" y1="0" x2="0" y2="630" stroke="white" stroke-width="1" />
+    <line x1="60" y1="0" x2="60" y2="630" stroke="white" stroke-width="1" />
+    <line x1="120" y1="0" x2="120" y2="630" stroke="white" stroke-width="1" />
+    <line x1="180" y1="0" x2="180" y2="630" stroke="white" stroke-width="1" />
+    <line x1="240" y1="0" x2="240" y2="630" stroke="white" stroke-width="1" />
+    <line x1="300" y1="0" x2="300" y2="630" stroke="white" stroke-width="1" />
+    <line x1="360" y1="0" x2="360" y2="630" stroke="white" stroke-width="1" />
+    <line x1="420" y1="0" x2="420" y2="630" stroke="white" stroke-width="1" />
+    <line x1="480" y1="0" x2="480" y2="630" stroke="white" stroke-width="1" />
+    <line x1="540" y1="0" x2="540" y2="630" stroke="white" stroke-width="1" />
+    <line x1="600" y1="0" x2="600" y2="630" stroke="white" stroke-width="1" />
+    <line x1="660" y1="0" x2="660" y2="630" stroke="white" stroke-width="1" />
+    <line x1="720" y1="0" x2="720" y2="630" stroke="white" stroke-width="1" />
+    <line x1="780" y1="0" x2="780" y2="630" stroke="white" stroke-width="1" />
+    <line x1="840" y1="0" x2="840" y2="630" stroke="white" stroke-width="1" />
+    <line x1="900" y1="0" x2="900" y2="630" stroke="white" stroke-width="1" />
+    <line x1="960" y1="0" x2="960" y2="630" stroke="white" stroke-width="1" />
+    <line x1="1020" y1="0" x2="1020" y2="630" stroke="white" stroke-width="1" />
+    <line x1="1080" y1="0" x2="1080" y2="630" stroke="white" stroke-width="1" />
+    <line x1="1140" y1="0" x2="1140" y2="630" stroke="white" stroke-width="1" />
+    <line x1="0" y1="0" x2="1200" y2="0" stroke="white" stroke-width="1" />
+    <line x1="0" y1="63" x2="1200" y2="63" stroke="white" stroke-width="1" />
+    <line x1="0" y1="126" x2="1200" y2="126" stroke="white" stroke-width="1" />
+    <line x1="0" y1="189" x2="1200" y2="189" stroke="white" stroke-width="1" />
+    <line x1="0" y1="252" x2="1200" y2="252" stroke="white" stroke-width="1" />
+    <line x1="0" y1="315" x2="1200" y2="315" stroke="white" stroke-width="1" />
+    <line x1="0" y1="378" x2="1200" y2="378" stroke="white" stroke-width="1" />
+    <line x1="0" y1="441" x2="1200" y2="441" stroke="white" stroke-width="1" />
+    <line x1="0" y1="504" x2="1200" y2="504" stroke="white" stroke-width="1" />
+    <line x1="0" y1="567" x2="1200" y2="567" stroke="white" stroke-width="1" />
+  </g>
+
+  <!-- Logo icon — centered left -->
+  <g transform="translate(100, 190)">
+    <rect x="0" y="0" width="180" height="180" rx="40" fill="url(#og-accent)" />
+    <g transform="translate(20, 20)">
+      <!-- Isometric cube -->
+      <path d="M70 20 L120 48 L120 96 L70 124 L20 96 L20 48 Z" fill="none" stroke="white" stroke-width="4" stroke-linejoin="round" opacity="0.35" />
+      <path d="M70 20 L120 48 L70 76 L20 48 Z" fill="white" opacity="0.15" />
+      <path d="M20 48 L70 76 L70 124 L20 96 Z" fill="white" opacity="0.08" />
+      <path d="M120 48 L70 76 L70 124 L120 96 Z" fill="white" opacity="0.2" />
+      <!-- AI core -->
+      <circle cx="70" cy="74" r="8" fill="white" opacity="0.95" />
+      <!-- Neural lines -->
+      <line x1="70" y1="66" x2="70" y2="32" stroke="white" stroke-width="3" opacity="0.5" stroke-linecap="round" />
+      <line x1="78" y1="74" x2="108" y2="58" stroke="white" stroke-width="3" opacity="0.5" stroke-linecap="round" />
+      <line x1="62" y1="74" x2="32" y2="58" stroke="white" stroke-width="3" opacity="0.5" stroke-linecap="round" />
+      <line x1="70" y1="82" x2="70" y2="112" stroke="white" stroke-width="3" opacity="0.4" stroke-linecap="round" />
+      <!-- Node dots -->
+      <circle cx="70" cy="28" r="4" fill="white" opacity="0.8" />
+      <circle cx="112" cy="56" r="4" fill="white" opacity="0.7" />
+      <circle cx="28" cy="56" r="4" fill="white" opacity="0.7" />
+      <circle cx="70" cy="116" r="3" fill="white" opacity="0.6" />
+    </g>
+  </g>
+
+  <!-- Text -->
+  <text x="340" y="260" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white" letter-spacing="-1">
+    ProductPilot
+  </text>
+  <text x="340" y="310" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white" letter-spacing="-1">
+    AI
+    <tspan dx="12" font-size="22" font-weight="600" fill="#818CF8">ENTERPRISE INTELLIGENCE</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="340" y="370" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="22" font-weight="400" fill="#94A3B8">
+    AI-powered industrial product data intelligence.
+  </text>
+  <text x="340" y="400" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="22" font-weight="400" fill="#94A3B8">
+    Extract, validate, and enrich product specs from any source.
+  </text>
+
+  <!-- Bottom URL -->
+  <text x="100" y="580" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="18" font-weight="500" fill="#475569">
+    productpilot.ai
+  </text>
+
+  <!-- Decorative accent line -->
+  <rect x="100" y="440" width="1000" height="2" rx="1" fill="url(#og-accent)" opacity="0.2" />
+</svg>

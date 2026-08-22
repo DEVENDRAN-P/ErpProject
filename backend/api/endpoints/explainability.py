@@ -78,9 +78,9 @@ def get_product_explainability(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> ExplainabilityResponse:
     """Get full explainability report for a product."""
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     product_dict = _product_to_dict(product)
     result = explain_product(product_dict)
@@ -125,9 +125,9 @@ def get_attribute_explanation(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Get detailed explanation for a single attribute."""
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     # Find the attribute
     attr = None

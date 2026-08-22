@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional, Any
+from typing import Any
 
 from backend.api.dependencies import get_current_user, get_db
-from backend.services.pipeline_service import run_product_pipeline, validate_input_file
-from backend.evaluation import run_evaluation, load_ground_truth_dataset
+from backend.services.pipeline_service import run_product_pipeline
 
 router = APIRouter()
 
@@ -44,58 +43,3 @@ def process_workflow(
         raise HTTPException(status_code=422, detail=result["error"])
 
     return result
-
-
-@router.post("/evaluation/run")
-def evaluation_run(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-) -> dict[str, Any]:
-    """Run Step 6 ground truth evaluation against the 200-item dataset."""
-    filepath = "Unilog-Sample_200_Items-Input-vs-Output.xlsx"
-    try:
-        report = run_evaluation(filepath)
-        return {
-            "status": "completed",
-            "dataset": report["dataset"],
-            "rows_evaluated": report["rows_evaluated"],
-            "overall_accuracy": report["overall_accuracy"],
-            "manufacturer_accuracy": report["manufacturer_accuracy"],
-            "brand_accuracy": report["brand_accuracy"],
-            "classification_accuracy": report["classification_accuracy"],
-            "attribute_accuracy": report["attribute_accuracy"],
-            "lov_compliance": report["lov_compliance"],
-            "uom_compliance": report["uom_compliance"],
-            "character_limit_compliance": report["character_limit_compliance"],
-            "verified_value_rate": report["verified_value_rate"],
-            "missing_detection_rate": report["missing_detection_rate"],
-            "human_review_rate": report["human_review_rate"],
-            "failed_rows_count": len(report["failed_rows"]),
-        }
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Evaluation dataset not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/evaluation/dataset")
-def evaluation_dataset() -> dict[str, Any]:
-    """Load the ground-truth dataset structure."""
-    try:
-        input_rows, ground_truth_rows = load_ground_truth_dataset(
-            "Unilog-Sample_200_Items-Input-vs-Output.xlsx"
-        )
-        return {
-            "status": "loaded",
-            "input_rows": len(input_rows),
-            "ground_truth_rows": len(ground_truth_rows),
-            "input_sheet_columns": list(
-                input_rows[0].keys() if input_rows else []
-            ),
-            "delivery_sheet_columns": list(
-                ground_truth_rows[0].keys() if ground_truth_rows else []
-            ),
-        }
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Evaluation dataset not found")
-

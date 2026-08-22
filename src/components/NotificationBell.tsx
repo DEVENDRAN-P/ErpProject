@@ -17,7 +17,7 @@ const TYPE_COLORS: Record<string, string> = {
   conflict: "var(--color-warning)",
   review: "var(--accent-primary)",
   system: "var(--color-info)",
-  batch: "#7C3AED",
+  batch: "var(--color-purple)",
   quality: "var(--color-success)",
 };
 
