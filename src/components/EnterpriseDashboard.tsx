@@ -116,7 +116,7 @@ function ValidationTab({ product }: { product: ProductRead }) {
 
 // ─── Health Score ──────────────────────────────────────────────────
 function HealthTab({ product }: { product: ProductRead }) {
-  const [health, setHealth] = useState<HealthBreakdown | null>(null);
+  const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -124,7 +124,7 @@ function HealthTab({ product }: { product: ProductRead }) {
     let cancelled = false;
     setLoading(true); setError("");
     fetchProductHealth(product.id)
-      .then((data: HealthBreakdown) => { if (!cancelled) setHealth(data); })
+      .then((data: any) => { if (!cancelled) setHealth(data); })
       .catch((e: any) => { if (!cancelled) setError(e.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
