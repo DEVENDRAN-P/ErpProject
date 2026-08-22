@@ -243,7 +243,7 @@ export default function KnowledgeGraphTab({ productId }: { productId: number }) 
             Product Knowledge Graph
           </h3>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            {graphData.summary.total_nodes} nodes, {graphData.summary.total_edges} relationships
+            {graphData.summary?.total_nodes ?? graphData.nodes?.length ?? 0} nodes, {graphData.summary?.total_edges ?? graphData.edges?.length ?? 0} relationships
           </p>
         </div>
         <div className="flex items-center gap-2">

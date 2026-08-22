@@ -16,6 +16,12 @@ export async function GET() {
       { source: "a-power", target: "s-pdf", relation: "VERIFIED_BY" },
       { source: "a-voltage", target: "s-pdf", relation: "VERIFIED_BY" },
       { source: "a-eff", target: "s-pdf", relation: "VERIFIED_BY" }
-    ]
+    ],
+    summary: {
+      total_nodes: 5,
+      total_edges: 6,
+      node_types: ["product", "attribute", "source"],
+      edge_types: ["HAS_RATED_POWER", "HAS_RATED_VOLTAGE", "HAS_EFFICIENCY_CLASS", "VERIFIED_BY"]
+    }
   });
 }
