@@ -154,21 +154,42 @@ export default function ProductWorkflow() {
               className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
               style={{ background: "var(--accent-primary)" }}
             >
-              💾 Store & Save Product Data
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              <span>Store & Save Product Data</span>
             </button>
             <a
               href="/dashboard"
               className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
               style={{ background: "#0F766E" }}
             >
-              📊 Move to Dashboard & View ProductTwin →
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="9" rx="1"/>
+                <rect x="14" y="3" width="7" height="5" rx="1"/>
+                <rect x="14" y="12" width="7" height="9" rx="1"/>
+                <rect x="3" y="16" width="7" height="5" rx="1"/>
+              </svg>
+              <span>Move to Dashboard & View ProductTwin</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
             </a>
             <a
               href="/dashboard?view=graph"
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border transition"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border transition hover:bg-gray-50"
               style={{ borderColor: "var(--border-default)", background: "var(--bg-card)", color: "var(--text-primary)" }}
             >
-              🕸️ View Knowledge Graph
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/>
+                <circle cx="6" cy="12" r="3"/>
+                <circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              <span>View Knowledge Graph</span>
             </a>
           </div>
         </div>
