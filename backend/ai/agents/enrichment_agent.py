@@ -366,17 +366,15 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
         except Exception as e:
             print(f"[OPENAI EXTRACTION ERROR] {e}")
 
-    # Gemini LLM Extraction
+    # Gemini LLM Extraction (using REST API directly to avoid SDK import timeout)
     gemini_key = getattr(settings, "gemini_api_key", None) or os.getenv("GEMINI_API_KEY", "")
     gemini_key_present = bool(gemini_key and gemini_key.strip())
     print(f"[GEMINI DIAG] key_present={gemini_key_present} key_length={len(gemini_key) if gemini_key else 0}")
     if gemini_key_present:
         try:
-            import google.generativeai as genai
-            print("[GEMINI DIAG] SDK imported successfully")
-            genai.configure(api_key=gemini_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            print("[GEMINI DIAG] Model initialized, sending request...")
+            import urllib.request
+            import urllib.error
+            print("[GEMINI DIAG] Sending request via REST API...")
             prompt = (
                 "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
                 "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
@@ -396,10 +394,17 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                 "- Include any other specifications you find (dimensions, materials, ratings, standards, etc.)\n\n"
                 f"Document text:\n{input_text[:4000]}"
             )
-            resp = model.generate_content(prompt)
-            raw = resp.text
+            payload = json.dumps({
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"responseMimeType": "application/json"}
+            }).encode("utf-8")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
             print(f"[GEMINI DIAG] Response received, length={len(raw) if raw else 0}")
-            if "{" in raw:
+            if raw and "{" in raw:
                 json_str = raw[raw.find("{"):raw.rfind("}")+1]
                 parsed = json.loads(json_str)
                 if "attributes" in parsed and isinstance(parsed["attributes"], list):
@@ -416,13 +421,14 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                 else:
                     print(f"[GEMINI DIAG] Response parsed but no 'attributes' array found")
             else:
-                print(f"[GEMINI DIAG] Response has no JSON object (first 200 chars: {raw[:200] if raw else 'None'})")
-        except ImportError as e:
-            print(f"[GEMINI DIAG] SDK import failed: {e}")
+                print(f"[GEMINI DIAG] Response has no JSON (first 200 chars: {raw[:200] if raw else 'None'})")
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8", errors="ignore")[:200]
+            print(f"[GEMINI DIAG] HTTP error {e.code}: {error_body}")
         except Exception as e:
             print(f"[GEMINI DIAG] Gemini API call failed: {type(e).__name__}: {e}")
     else:
-        print(f"[GEMINI DIAG] No Gemini key configured - settings.gemini_api_key={bool(getattr(settings, 'gemini_api_key', ''))} os.getenv={bool(os.getenv('GEMINI_API_KEY'))}")
+        print(f"[GEMINI DIAG] No Gemini key - settings={bool(getattr(settings, 'gemini_api_key', ''))} env={bool(os.getenv('GEMINI_API_KEY'))}")
 
     # Rule-based extraction fallback
     print("[ENRICH DIAG] Using rule-based extraction fallback (no LLM succeeded)")
