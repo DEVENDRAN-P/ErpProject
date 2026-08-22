@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   return NextResponse.json({
     overall_confidence: 0.96,
     attributes_breakdown: [

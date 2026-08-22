@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const idNum = parseInt(params?.id || "101", 10);
   const exportData = {
-    id: 101,
+    id: idNum,
     name: "Siemens 1LE1001 15kW Industrial Motor",
     model_number: "1LE1001-1DB43-4AA4",
     category: "Industrial Automation",
@@ -19,7 +22,7 @@ export async function GET() {
   return new NextResponse(JSON.stringify(exportData, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": 'attachment; filename="product_101_export.json"'
+      "Content-Disposition": `attachment; filename="product_${idNum}_export.json"`
     }
   });
 }

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const idNum = parseInt(params?.id || "101", 10);
   const csvContent = [
     "Key,Label,Value,Confidence,Status",
     "rated_power,Rated Power,15 kW,0.98,VERIFIED",
@@ -13,7 +16,7 @@ export async function GET() {
   return new NextResponse(csvContent, {
     headers: {
       "Content-Type": "text/csv",
-      "Content-Disposition": 'attachment; filename="product_101_export.csv"'
+      "Content-Disposition": `attachment; filename="product_${idNum}_export.csv"`
     }
   });
 }
