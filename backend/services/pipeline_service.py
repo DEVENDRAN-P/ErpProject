@@ -451,10 +451,15 @@ def run_product_pipeline(
     # ---------------------------------------------------------------
     # 6. Compile final result
     # ---------------------------------------------------------------
+    llm_used = enrichment_results.get("llm_used")
+    extraction_note = enrichment_results.get("note")
+
     return {
         "combined_input": combined_input,
         "status": _determine_overall_status(validated_attrs),
         "extracted_text_length": len(combined_input),
+        "llm_used": llm_used,
+        "extraction_note": extraction_note,
         "document": document_results,
         "vision": vision_results,
         "url_ingest": url_results,

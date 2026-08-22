@@ -310,15 +310,23 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
         try:
             client = openai.OpenAI(api_key=api_key)
             prompt = (
-                "Extract structured industrial product specification attributes from the following text into JSON format.\n"
-                "Attributes: rated_power, supply_voltage, rated_current, efficiency_class, rated_speed, max_temperature, frame_size, total_weight.\n"
-                "Each attribute must be an object with fields: key, label, raw_value (string or null), value (string or null), unit, confidence (0.0-1.0), source, page, evidence, evidence_quote, status ('verified', 'needs_review', 'not_found'), validation results, reason.\n"
-                "If a value cannot be found, set value to null, confidence to 0.0, status to 'not_found', and evidence to 'Insufficient evidence.'\n"
-                "Never invent or hallucinate technical specifications.\n"
-                "For every extracted value, extract surrounding context (at least 200 characters before and after) as evidence.\n"
-                "Validate that units match the expected attribute type.\n"
-                "Mark values as 'needs_review' if context is ambiguous, unit is suspicious, or plausibility is questionable.\n\n"
-                f"Input text:\n{input_text[:3000]}"
+                "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
+                "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
+                "Extract attributes that are PRESENT in the document. Do NOT extract attributes that are not mentioned.\n\n"
+                "Return a JSON object with key 'attributes' containing an array of objects, each with:\n"
+                "- key: snake_case attribute name (e.g. 'rated_power', 'grit_size', 'disc_diameter', 'abrasive_type', 'max_rpm', 'backing_type', 'bond_type')\n"
+                "- label: Human-readable label\n"
+                "- value: The extracted value as a string, or null if not found\n"
+                "- unit: The unit of measurement, or empty string\n"
+                "- confidence: 0.0 to 1.0 based on how certain you are\n"
+                "- evidence: Exact quote from the document supporting this value\n"
+                "- status: 'verified' if explicitly stated, 'needs_review' if ambiguous, 'not_found' if absent\n\n"
+                "Rules:\n"
+                "- Never invent specifications not present in the text\n"
+                "- If an attribute is not in the document, include it with value=null, status='not_found'\n"
+                "- Always include: product_name, product_type/category, manufacturer/brand\n"
+                "- Include any other specifications you find (dimensions, materials, ratings, standards, etc.)\n\n"
+                f"Document text:\n{input_text[:4000]}"
             )
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -346,11 +354,12 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                         attr["status"] = "needs_review"
                 return {
                     "type": "enrichment",
+                    "llm_used": "openai",
                     "product_name": input_text[:100],
                     "attributes": parsed["attributes"],
-                    "applications": parsed.get("applications", ["Industrial Pumping", "Compressor Systems", "HVAC Fans"]),
-                    "industries": parsed.get("industries", ["Manufacturing", "Oil & Gas", "Water Treatment"]),
-                    "tags": parsed.get("tags", ["Industrial Motor", "3-Phase", "IE3"]),
+                    "applications": parsed.get("applications", []),
+                    "industries": parsed.get("industries", []),
+                    "tags": parsed.get("tags", []),
                 }
         except Exception as e:
             print(f"[OPENAI EXTRACTION ERROR] {e}")
@@ -363,10 +372,23 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
             genai.configure(api_key=gemini_key)
             model = genai.GenerativeModel("gemini-1.5-flash")
             prompt = (
-                "Extract structured industrial product specification attributes from the following text into JSON format.\n"
-                "Attributes: rated_power, supply_voltage, rated_current, efficiency_class, rated_speed, max_temperature, frame_size, total_weight.\n"
-                "Return JSON object with top-level key 'attributes' containing an array of objects: {key, label, value, unit, confidence, evidence, status}.\n\n"
-                f"Input text:\n{input_text[:3000]}"
+                "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
+                "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
+                "Extract attributes that are PRESENT in the document. Do NOT extract attributes that are not mentioned.\n\n"
+                "Return a JSON object with key 'attributes' containing an array of objects, each with:\n"
+                "- key: snake_case attribute name\n"
+                "- label: Human-readable label\n"
+                "- value: The extracted value as a string, or null if not found\n"
+                "- unit: The unit of measurement, or empty string\n"
+                "- confidence: 0.0 to 1.0\n"
+                "- evidence: Exact quote from the document\n"
+                "- status: 'verified' if explicitly stated, 'needs_review' if ambiguous, 'not_found' if absent\n\n"
+                "Rules:\n"
+                "- Never invent specifications not present in the text\n"
+                "- If an attribute is not in the document, include it with value=null, status='not_found'\n"
+                "- Always include: product_name, product_type/category, manufacturer/brand\n"
+                "- Include any other specifications you find (dimensions, materials, ratings, standards, etc.)\n\n"
+                f"Document text:\n{input_text[:4000]}"
             )
             resp = model.generate_content(prompt)
             raw = resp.text
@@ -376,11 +398,12 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                 if "attributes" in parsed and isinstance(parsed["attributes"], list):
                     return {
                         "type": "enrichment",
+                        "llm_used": "gemini",
                         "product_name": input_text[:100],
                         "attributes": parsed["attributes"],
-                        "applications": ["Industrial Pumping", "Compressor Systems", "HVAC Fans"],
-                        "industries": ["Manufacturing", "Oil & Gas", "Water Treatment"],
-                        "tags": ["Industrial Motor", "3-Phase", "IE3"],
+                        "applications": parsed.get("applications", []),
+                        "industries": parsed.get("industries", []),
+                        "tags": parsed.get("tags", []),
                     }
         except Exception as e:
             print(f"[GEMINI EXTRACTION ERROR] {e}")
@@ -582,9 +605,11 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
 
     return {
         "type": "enrichment",
+        "llm_used": None,
         "product_name": input_text[:100],
         "attributes": attributes,
-        "applications": ["Industrial Pumping", "Compressor Systems", "HVAC Fans", "Conveyor Drives"],
-        "industries": ["Manufacturing", "Oil & Gas", "Water Treatment", "Mining"],
-        "tags": ["3-Phase", "Induction Motor", "IE3", "IP55", "Siemens"],
+        "note": "Rule-based extraction used (no LLM available). Results are limited to motor-specific attributes. Configure GEMINI_API_KEY or OPENAI_API_KEY on the backend for full product analysis.",
+        "applications": [],
+        "industries": [],
+        "tags": [],
     }
