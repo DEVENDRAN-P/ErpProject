@@ -147,9 +147,24 @@ def upload_product_document(
 ) -> dict[str, Any]:
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is required.")
+
+    # ── File type validation ──
+    allowed_extensions = {"pdf", "csv", "txt", "png", "jpg", "jpeg", "webp"}
+    ext = file.filename.lower().split(".")[-1] if "." in file.filename else ""
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: .{ext}. Allowed: {', '.join(allowed_extensions)}")
+
+    # ── Read contents with size limit ──
+    max_size = 10 * 1024 * 1024  # 10 MB
     contents = file.file.read()
     if len(contents) == 0:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    if len(contents) > max_size:
+        raise HTTPException(status_code=413, detail="Uploaded file exceeds the maximum allowed size of 10 MB.")
+
+    # ── Path traversal protection: reject filenames with separators ──
+    if any(c in file.filename for c in ("/", "\\", "..")):
+        raise HTTPException(status_code=400, detail="Invalid filename.")
 
     extracted = parse_document(contents, file.filename)
     if not extracted.get("text", "").strip():

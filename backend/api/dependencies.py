@@ -42,6 +42,29 @@ class AuthenticatedUser:
 security = HTTPBearer(auto_error=False)
 
 
+def _verify_firebase_token(token: str) -> dict:
+    """Verify a Firebase ID token using Firebase Admin SDK.
+
+    This is a separate function so tests can easily mock it.
+    """
+    from backend.core.firebase import get_firebase_app
+
+    firebase_app = get_firebase_app()
+    if firebase_app is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Firebase Admin SDK failed to initialize.",
+        )
+
+    # Import and use firebase_admin.auth at function level
+    import firebase_admin.auth
+    return firebase_admin.auth.verify_id_token(token)
+
+
+# Overridable reference for testing — set this to a custom callable to bypass Firebase
+_verify_token_fn = None
+
+
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db=Depends(get_db),
@@ -69,17 +92,11 @@ async def get_current_user(
 
     # Verify the token cryptographically using Firebase Admin SDK
     try:
-        from backend.core.firebase import get_firebase_app
-        from firebase_admin import auth as fb_auth
-
-        firebase_app = get_firebase_app()
-        if firebase_app is None:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Firebase Admin SDK failed to initialize.",
-            )
-
-        decoded = fb_auth.verify_id_token(token)
+        # Allow tests to override verification
+        if _verify_token_fn is not None:
+            decoded = _verify_token_fn(token)
+        else:
+            decoded = _verify_firebase_token(token)
 
         return AuthenticatedUser(
             uid=decoded["uid"],

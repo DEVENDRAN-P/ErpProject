@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.router import api_router
 from backend.core.config import settings
+from backend.core.rate_limit import RateLimitMiddleware
 from backend.db.init_db import init_db
 from backend.reference_data import load_reference_data
 
@@ -56,6 +57,10 @@ async def add_security_headers(request: Request, call_next):
     if os.environ.get("ENVIRONMENT") == "production":
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
     return response
+
+
+# ── Rate Limiting ────────────────────────────────────────────────────────
+app.add_middleware(RateLimitMiddleware)
 
 
 app.include_router(api_router, prefix=settings.api_prefix)

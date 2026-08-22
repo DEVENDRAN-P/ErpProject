@@ -2,11 +2,14 @@
 
 Uses an isolated temporary SQLite database so tests never touch the
 development database and work from a clean environment.
+
+Firebase Admin SDK is mocked for testing — no real Firebase credentials needed.
 """
 
 import os
 import sys
 import tempfile
+import time
 
 # Must be set before any backend import so db/session.py binds the test DB.
 _TMP_DB_FD, _TMP_DB_PATH = tempfile.mkstemp(suffix=".db", prefix="nexgen_test_")
@@ -18,17 +21,50 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
 
 from backend.main import app
-from backend.core.security import get_password_hash
 from backend.db.session import SessionLocal
 from backend.models.user import User
 
 
+# ── Mock Firebase Admin SDK for testing ────────────────────────────────────
+def _mock_verify_id_token(token: str):
+    """Mock Firebase token verification for testing."""
+    # Token format: "test-token-{uid}-{email}"
+    if not token.startswith("test-token-"):
+        raise Exception("Invalid mock token format")
+
+    parts = token.split("-", 3)
+    if len(parts) < 4:
+        raise Exception("Invalid mock token format")
+
+    return {
+        "uid": parts[2],
+        "email": parts[3],
+        "name": "Test User",
+    }
+
+
 @pytest.fixture(scope="session")
 def client():
-    with TestClient(app) as c:  # triggers lifespan: tables + reference data + demo seed
-        yield c
+    with patch("backend.api.dependencies.fb_auth") as mock_fb_auth:
+        mock_fb_auth.verify_id_token = _mock_verify_id_token
+
+        # Also mock get_firebase_app
+        with patch("backend.api.dependencies.get_firebase_app") as mock_get_app:
+            mock_app = MagicMock()
+            mock_get_app.return_value = mock_app
+
+            # Force _is_fb_admin_configured to return True
+            import backend.api.dependencies as deps
+            original_val = deps._fb_admin_available
+            deps._fb_admin_available = True
+
+            with TestClient(app) as c:
+                yield c
+
+            deps._fb_admin_available = original_val
 
 
 @pytest.fixture()
@@ -46,18 +82,18 @@ def db_session():
 
 @pytest.fixture(scope="session")
 def auth_headers(client):
-    """Register + login a test user and return Authorization headers."""
+    """Create a test user and return Authorization headers with a mock Firebase token."""
     email = "tester@nexgen.ai"
-    password = "testpass123"
+    uid = "test-uid-tester-123"
 
-    # Create the user directly (fast, deterministic)
+    # Create the user directly in the database
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.email == email).first()
         if not user:
             user = User(
                 email=email,
-                hashed_password=get_password_hash(password),
+                hashed_password="not-used-firebase-auth",
                 full_name="Test Engineer",
                 is_active=True,
             )
@@ -66,10 +102,31 @@ def auth_headers(client):
     finally:
         db.close()
 
-    resp = client.post(
-        "/api/auth/token",
-        data={"username": email, "password": password},
-    )
-    assert resp.status_code == 200, resp.text
-    token = resp.json()["access_token"]
+    # Create a mock Firebase token
+    token = f"test-token-{uid}-{email}"
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(scope="session")
+def second_user_headers(client):
+    """Create a second test user for cross-user isolation tests."""
+    email = "second@nexgen.ai"
+    uid = "test-uid-second-456"
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(
+                email=email,
+                hashed_password="not-used-firebase-auth",
+                full_name="Second User",
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+    finally:
+        db.close()
+
+    token = f"test-token-{uid}-{email}"
     return {"Authorization": f"Bearer {token}"}
