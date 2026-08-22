@@ -8,7 +8,7 @@ export default function MissingDataSection() {
   const r2 = useReveal(150);
 
   return (
-    <section className="py-24 bg-gray-50/50">
+    <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <div ref={r1.ref} className={`${r1.className}`} style={r1.style}>

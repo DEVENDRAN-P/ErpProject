@@ -8,7 +8,7 @@ export default function CatalogPilotSection() {
   const r2 = useReveal(150);
 
   return (
-    <section className="py-24 bg-gray-50/50" id="solutions">
+    <section className="py-24 bg-white" id="solutions">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={r1.ref} className={`text-center mb-16 ${r1.className}`} style={r1.style}>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-50 border border-violet-100 mb-6">

@@ -13,7 +13,7 @@ export default function CategoriesSection() {
   const r1 = useReveal();
 
   return (
-    <section className="py-24 bg-gray-50/50">
+    <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={r1.ref} className={`text-center mb-14 ${r1.className}`} style={r1.style}>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-6">

@@ -14,7 +14,7 @@ export default function HealthScoreSection() {
   const r1 = useReveal();
 
   return (
-    <section className="py-24 bg-gray-50/50" id="features">
+    <section className="py-24 bg-white" id="features">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={r1.ref} className={`text-center mb-16 ${r1.className}`} style={r1.style}>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 mb-6">

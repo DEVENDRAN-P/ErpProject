@@ -89,16 +89,10 @@ export default function Hero() {
   const { ref: heroRef, inView: heroVisible } = useInView(0.1);
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-b from-slate-50 via-white to-white pt-20">
-      {/* Subtle grid background */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: "radial-gradient(circle, #2563EB 1px, transparent 1px)",
-        backgroundSize: "32px 32px",
-      }} />
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-white pt-20">
 
-      {/* Gradient orbs */}
-      <div className="absolute top-20 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-blue-400/5 rounded-full blur-3xl" />
+
+
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-20 lg:py-0">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
