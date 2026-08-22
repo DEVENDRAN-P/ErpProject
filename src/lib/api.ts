@@ -178,48 +178,79 @@ export async function ingestProduct(product: ProductCreateInput) {
   return payload;
 }
 
+import { getUserProducts, saveUserProduct, getUserDashboardStats, uploadUserDocument } from "@/lib/firestoreService";
+
 export async function fetchProducts(query = "") {
+  const uid = auth?.currentUser?.uid;
   try {
     const searchParams = new URLSearchParams();
     if (query) searchParams.set("q", query);
     const headers = await buildAuthHeaders();
     const response = await fetch(`/api/products/?${searchParams.toString()}`, { headers });
     const payload = await parseJsonOrText(response);
-    if (!response.ok) return [];
-    return Array.isArray(payload) ? (payload as ProductRead[]) : [];
-  } catch {
-    return [];
+    if (response.ok && Array.isArray(payload) && payload.length > 0) {
+      return payload as ProductRead[];
+    }
+  } catch {}
+
+  if (uid) {
+    const userProducts = await getUserProducts(uid);
+    if (!query) return userProducts;
+    const q = query.toLowerCase();
+    return userProducts.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.category || "").toLowerCase().includes(q) ||
+        (p.model_number || "").toLowerCase().includes(q)
+    );
   }
+  return [];
 }
 
 export async function fetchProduct(productId: number) {
-  const headers = await buildAuthHeaders();
-  const response = await fetch(`/api/products/${productId}`, { headers });
-  const payload = await parseJsonOrText(response);
-  if (!response.ok) {
-    if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
-    throw new Error(typeof payload === "string" ? payload || "Unable to load product." : payload.detail || payload.message || "Unable to load product.");
+  const uid = auth?.currentUser?.uid;
+  try {
+    const headers = await buildAuthHeaders();
+    const response = await fetch(`/api/products/${productId}`, { headers });
+    const payload = await parseJsonOrText(response);
+    if (response.ok) return payload as ProductRead;
+  } catch {}
+
+  if (uid) {
+    const userProducts = await getUserProducts(uid);
+    const found = userProducts.find((p) => p.id === productId);
+    if (found) return found;
   }
-  return payload as ProductRead;
+
+  throw new Error("Product not found");
 }
 
 export async function fetchDashboardStats() {
-  const fallback = {
-    total_products: 156,
-    avg_confidence: 0.92,
-    active_conflicts: 3,
-    pending_reviews: 5,
-    catalog_health: 88,
-  };
+  const uid = auth?.currentUser?.uid;
   try {
     const headers = await buildAuthHeaders();
     const response = await fetch("/api/products/stats", { headers });
     const payload = await parseJsonOrText(response);
-    if (!response.ok) return fallback;
-    return payload || fallback;
-  } catch {
-    return fallback;
+    if (response.ok && payload && typeof payload === "object" && payload.total_products !== undefined) {
+      return payload;
+    }
+  } catch {}
+
+  if (uid) {
+    return await getUserDashboardStats(uid);
   }
+
+  return {
+    total_products: 0,
+    average_health_score: 0,
+    products_requiring_review: 0,
+    missing_attributes: 0,
+    open_conflicts: 0,
+    total_attributes: 0,
+    pending_reviews: 0,
+    recent_changes: [],
+    quality_overview: { excellent: 0, attention: 0, needs_review: 0 },
+  };
 }
 
 export async function fetchProductHealth(productId: number) {
@@ -301,16 +332,31 @@ export async function processWorkflow(formData: FormData) {
       body: formData,
       headers,
     });
+    const uid = auth?.currentUser?.uid;
     const payload = await parseJsonOrText(response);
     if (!response.ok) {
       if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
-      if (response.status === 404 || typeof payload === "string") return createDemoWorkflowResult();
+      if (response.status === 404 || typeof payload === "string") {
+        const demoRes = createDemoWorkflowResult();
+        if (uid && demoRes.product) {
+          await saveUserProduct(uid, demoRes.product as any).catch(() => {});
+        }
+        return demoRes;
+      }
       throw new Error(payload?.detail || payload?.message || "Unable to process workflow.");
+    }
+    if (uid && payload?.product) {
+      await saveUserProduct(uid, payload.product).catch(() => {});
     }
     return payload;
   } catch (err: any) {
     if (err.message?.includes("expired")) throw err;
-    return createDemoWorkflowResult();
+    const uid = auth?.currentUser?.uid;
+    const demoRes = createDemoWorkflowResult();
+    if (uid && demoRes.product) {
+      await saveUserProduct(uid, demoRes.product as any).catch(() => {});
+    }
+    return demoRes;
   }
 }
 

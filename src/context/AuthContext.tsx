@@ -122,6 +122,8 @@ function createDemoUser(email: string, displayName?: string): User {
   };
 }
 
+import { ensureUserDocument } from "@/lib/firestoreService";
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +135,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          setUser(createDemoUser(parsed.email, parsed.displayName));
+          const demoUser = createDemoUser(parsed.email, parsed.displayName);
+          setUser(demoUser);
+          ensureUserDocument({
+            uid: demoUser.uid,
+            email: demoUser.email || "",
+            displayName: demoUser.displayName,
+            photoURL: demoUser.photoURL,
+            providerId: "demo",
+          }).catch(() => {});
         } catch {
           localStorage.removeItem("nexgen_demo_user");
         }
@@ -155,6 +165,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
+      if (firebaseUser) {
+        ensureUserDocument({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || "",
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          providerId: firebaseUser.providerData[0]?.providerId || "firebase",
+        }).catch(() => {});
+      }
       setLoading(false);
     });
     return () => unsubscribe();
