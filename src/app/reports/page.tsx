@@ -28,38 +28,12 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 
-const initialQuality: DataQualityResponse = {
-  total_products: 156,
-  overall_quality_score: 91,
-  total_attributes: 1240,
-  filled_attributes: 1165,
-  completeness_rate: 94,
-  total_conflicts: 5,
-  resolved_conflicts: 4,
-  conflict_rate: 3.2,
-  resolution_rate: 92,
-  health_distribution: { excellent: 110, attention: 38, needs_review: 8 },
-  completeness_by_category: {
-    "Industrial Automation": { total: 60, filled: 57, completeness_pct: 95 },
-    "Electrical Components": { total: 96, filled: 88, completeness_pct: 92 },
-  },
-  missing_by_attribute: { "Warranty Period": 5, "Certifications": 3 },
-};
-
-const initialCompliance: ComplianceReportResponse = {
-  overall_compliance_rate: 96,
-  total_products: 156,
-  by_category: {
-    "Industrial Automation": { total_products: 60, compliant: 58, pending: 1, non_compliant: 1 },
-    "Electrical Components": { total_products: 96, compliant: 92, pending: 2, non_compliant: 2 },
-  },
-};
-
 function ReportsContent() {
-  const [quality, setQuality] = useState<DataQualityResponse>(initialQuality);
-  const [compliance, setCompliance] = useState<ComplianceReportResponse>(initialCompliance);
+  const [quality, setQuality] = useState<DataQualityResponse | null>(null);
+  const [compliance, setCompliance] = useState<ComplianceReportResponse | null>(null);
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"quality" | "compliance" | "audit">("quality");
 
   useEffect(() => {
@@ -67,17 +41,20 @@ function ReportsContent() {
   }, []);
 
   const loadAll = async () => {
+    setLoading(true); setError("");
     try {
       const [q, c, a] = await Promise.all([
         fetchDataQualityReport(),
         fetchComplianceReport(),
         fetchAuditTrail(),
       ]);
-      if (q) setQuality(q);
-      if (c) setCompliance(c);
-      if (a) setAuditTrail(a);
-    } catch (e) {
-      console.error("Failed to load live reports:", e);
+      setQuality(q);
+      setCompliance(c);
+      setAuditTrail(a);
+    } catch (e: any) {
+      setError(e.message || "Failed to load reports. The backend may be unavailable.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,6 +91,22 @@ function ReportsContent() {
             </button>
           ))}
         </div>
+
+        {/* Loading state */}
+        {loading && (
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="skeleton h-20 rounded-lg" />
+            ))}
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && !loading && (
+          <div className="rounded-lg p-4 text-sm" style={{ background: "var(--color-error-light)", color: "var(--color-error)", border: "1px solid var(--color-error-border)" }}>
+            {error}
+          </div>
+        )}
 
         {/* Quality Tab */}
         {activeTab === "quality" && quality && (

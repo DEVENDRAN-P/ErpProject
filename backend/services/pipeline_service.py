@@ -30,6 +30,7 @@ from backend.services.product_service import (
     create_product,
     merge_source_into_product,
     compute_dynamic_health_score,
+    _create_notification,
 )
 from backend.status import (
     STATUS_VERIFIED,
@@ -434,6 +435,16 @@ def run_product_pipeline(
                     "merged": False,
                     "conflicts_created": 0,
                 }
+                # Notify user of new product creation
+                if created_by:
+                    _create_notification(
+                        db=db,
+                        user_id=created_by,
+                        notif_type="system",
+                        title=f"Product created: {product.name}",
+                        message=f"New product '{product.name}' created with {len(product.attributes)} attributes. Health score: {product.health_score}/100",
+                        product_id=product.id,
+                    )
     except Exception as err:
         product_payload = {"error": f"Failed to persist product: {str(err)}"}
 

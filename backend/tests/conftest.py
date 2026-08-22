@@ -48,23 +48,21 @@ def _mock_verify_id_token(token: str):
 
 @pytest.fixture(scope="session")
 def client():
-    with patch("backend.api.dependencies.fb_auth") as mock_fb_auth:
-        mock_fb_auth.verify_id_token = _mock_verify_id_token
+    import backend.api.dependencies as deps
 
-        # Also mock get_firebase_app
-        with patch("backend.api.dependencies.get_firebase_app") as mock_get_app:
-            mock_app = MagicMock()
-            mock_get_app.return_value = mock_app
+    # Override the token verification function for testing
+    original_verify_fn = deps._verify_token_fn
+    original_fb_available = deps._fb_admin_available
 
-            # Force _is_fb_admin_configured to return True
-            import backend.api.dependencies as deps
-            original_val = deps._fb_admin_available
-            deps._fb_admin_available = True
+    deps._verify_token_fn = _mock_verify_id_token
+    deps._fb_admin_available = True
 
-            with TestClient(app) as c:
-                yield c
-
-            deps._fb_admin_available = original_val
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        deps._verify_token_fn = original_verify_fn
+        deps._fb_admin_available = original_fb_available
 
 
 @pytest.fixture()

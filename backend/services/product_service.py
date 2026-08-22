@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 
-from backend.models.product import Product, ProductAttribute, ReviewItem, ProductVersion, ProductTruthConflict
+from backend.models.product import Product, ProductAttribute, ReviewItem, ProductVersion, ProductTruthConflict, Notification
 from backend.reference_data import load_reference_data
 from backend.schemas.product import ProductCreate
 from backend.status import (
@@ -23,6 +23,28 @@ from backend.status import (
 )
 
 REQUIRED_KEYS = ["rated_power", "supply_voltage", "rated_current", "efficiency_class", "rated_speed", "max_temperature", "frame_size", "total_weight"]
+
+
+def _create_notification(
+    db: Session,
+    user_id: str,
+    notif_type: str,
+    title: str,
+    message: str,
+    product_id: int | None = None,
+) -> None:
+    """Create a notification record in the database."""
+    try:
+        db.add(Notification(
+            user_id=user_id,
+            type=notif_type,
+            title=title,
+            message=message,
+            product_id=product_id,
+        ))
+        # Don't commit here — caller will commit
+    except Exception:
+        pass  # Notification creation should never block the main flow
 
 # Ensure validation reference data (LOV / UOM / manufacturer) is always
 # available, even when the pipeline is invoked outside the FastAPI lifespan.
@@ -386,6 +408,18 @@ def merge_source_into_product(
     if new_reviews:
         db.add_all(new_reviews)
 
+    # Create notifications for conflicts
+    if new_conflicts and created_by:
+        for conflict in new_conflicts:
+            _create_notification(
+                db=db,
+                user_id=created_by,
+                notif_type="conflict",
+                title=f"Conflict detected: {conflict.label}",
+                message=f"Conflicting values found for '{conflict.label}' from multiple sources. Human review required.",
+                product_id=product.id,
+            )
+
     product.health_score = compute_dynamic_health_score(product.attributes, product.conflicts)
     product.updated_at = datetime.utcnow()
     db.commit()
@@ -537,6 +571,17 @@ def process_human_review_action(
     new_score = compute_dynamic_health_score(product.attributes, product.conflicts)
     product.health_score = new_score
     product.updated_at = datetime.utcnow()
+
+    # Create notification for the review action
+    if product.created_by:
+        _create_notification(
+            db=db,
+            user_id=product.created_by,
+            notif_type="review",
+            title=f"Review {action_key}: {item.title}",
+            message=f"Review item '{item.title}' was {action_key} by {item.reviewer or 'reviewer'}. Health score: {new_score}/100",
+            product_id=product.id,
+        )
 
     db.commit()
 
