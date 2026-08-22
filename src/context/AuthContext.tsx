@@ -163,20 +163,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Silently handle redirect errors — user will see auth state change
       });
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        ensureUserDocument({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || "",
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          providerId: firebaseUser.providerData[0]?.providerId || "firebase",
-        }).catch(() => {});
-      }
+    let unsubscribe: (() => void) | null = null;
+    try {
+      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        setUser(firebaseUser);
+        if (firebaseUser) {
+          ensureUserDocument({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            providerId: firebaseUser.providerData[0]?.providerId || "firebase",
+          }).catch(() => {});
+        }
+        setLoading(false);
+      }, (error) => {
+        // Gracefully handle IndexedDB "Database is closing/hidden" errors
+        console.warn("Firebase Auth state listener error:", error?.message);
+        setLoading(false);
+      });
+    } catch (err: any) {
+      console.warn("Firebase Auth subscription failed:", err?.message);
       setLoading(false);
-    });
-    return () => unsubscribe();
+    }
+    return () => unsubscribe?.();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
