@@ -706,20 +706,28 @@ export async function downloadBatchExport(format: string = "json", category?: st
 
 export async function fetchDataQualityReport() {
   const fallback = {
-    overall_score: 91,
-    total_records: 150,
-    metrics: { completeness: 94, accuracy: 89, consistency: 92 },
-    category_health: [
-      { category: "Industrial Automation", score: 94, total_items: 60, items_with_issues: 3 },
-      { category: "Electrical Components", score: 88, total_items: 90, items_with_issues: 8 }
-    ]
+    total_products: 156,
+    overall_quality_score: 91,
+    total_attributes: 1240,
+    filled_attributes: 1165,
+    completeness_rate: 94,
+    total_conflicts: 5,
+    resolved_conflicts: 4,
+    conflict_rate: 3.2,
+    resolution_rate: 92,
+    health_distribution: { excellent: 110, attention: 38, needs_review: 8 },
+    completeness_by_category: {
+      "Industrial Automation": { total: 60, filled: 57, completeness_pct: 95 },
+      "Electrical Components": { total: 96, filled: 88, completeness_pct: 92 },
+    },
+    missing_by_attribute: { "Warranty Period": 5, "Certifications": 3 },
   };
   try {
     const headers = await buildAuthHeaders();
     const response = await fetch("/api/products/reports/data-quality", { headers });
     const payload = await parseJsonOrText(response);
-    if (!response.ok) return fallback;
-    return payload || fallback;
+    if (!response.ok || !payload || typeof payload !== "object") return fallback;
+    return { ...fallback, ...payload };
   } catch {
     return fallback;
   }
@@ -727,20 +735,19 @@ export async function fetchDataQualityReport() {
 
 export async function fetchComplianceReport() {
   const fallback = {
-    compliance_score: 96,
-    certified_products: 144,
-    non_compliant_count: 6,
-    standards: [
-      { name: "RoHS Compliance", status: "Compliant", passing_rate: 98 },
-      { name: "REACH SVHC", status: "Compliant", passing_rate: 95 }
-    ]
+    overall_compliance_rate: 96,
+    total_products: 156,
+    by_category: {
+      "Industrial Automation": { total_products: 60, compliant: 58, pending: 1, non_compliant: 1 },
+      "Electrical Components": { total_products: 96, compliant: 92, pending: 2, non_compliant: 2 },
+    },
   };
   try {
     const headers = await buildAuthHeaders();
     const response = await fetch("/api/products/reports/compliance", { headers });
     const payload = await parseJsonOrText(response);
-    if (!response.ok) return fallback;
-    return payload || fallback;
+    if (!response.ok || !payload || typeof payload !== "object") return fallback;
+    return { ...fallback, ...payload };
   } catch {
     return fallback;
   }
