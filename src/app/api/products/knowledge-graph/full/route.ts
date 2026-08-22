@@ -1,27 +1,29 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  return NextResponse.json({
-    nodes: [
-      { id: "p-101", label: "Siemens 1LE1001", type: "product" },
-      { id: "a-power", label: "15 kW", type: "attribute" },
-      { id: "a-voltage", label: "415 V", type: "attribute" },
-      { id: "a-eff", label: "IE3", type: "attribute" },
-      { id: "s-pdf", label: "Siemens_1LE1001_Datasheet.pdf", type: "source" }
-    ],
-    edges: [
-      { source: "p-101", target: "a-power", relation: "HAS_RATED_POWER" },
-      { source: "p-101", target: "a-voltage", relation: "HAS_RATED_VOLTAGE" },
-      { source: "p-101", target: "a-eff", relation: "HAS_EFFICIENCY_CLASS" },
-      { source: "a-power", target: "s-pdf", relation: "VERIFIED_BY" },
-      { source: "a-voltage", target: "s-pdf", relation: "VERIFIED_BY" },
-      { source: "a-eff", target: "s-pdf", relation: "VERIFIED_BY" }
-    ],
-    summary: {
-      total_nodes: 5,
-      total_edges: 6,
-      node_types: ["product", "attribute", "source"],
-      edge_types: ["HAS_RATED_POWER", "HAS_RATED_VOLTAGE", "HAS_EFFICIENCY_CLASS", "VERIFIED_BY"]
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  try {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+      const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/products/knowledge-graph/full`, {
+        headers: {
+          Authorization: request.headers.get("Authorization") || "",
+        },
+      });
+      const data = await res.json();
+      return NextResponse.json(data, { status: res.status });
     }
-  });
+
+    return NextResponse.json(
+      { error: "Backend not configured. Please set BACKEND_URL environment variable." },
+      { status: 503 }
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch knowledge graph." },
+      { status: 502 }
+    );
+  }
 }

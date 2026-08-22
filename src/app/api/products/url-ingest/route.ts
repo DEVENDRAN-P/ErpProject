@@ -1,19 +1,33 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const url = body?.url || "https://example.com";
-    return NextResponse.json({
-      success: true,
-      message: `URL extraction completed for ${url}`,
-      product_name: "Extracted Product Spec",
-      extracted_attributes: [
-        { key: "rated_power", label: "Rated Power", value: "15 kW", confidence: 0.95, source: url },
-        { key: "efficiency_class", label: "Efficiency Class", value: "IE3", confidence: 0.92, source: url }
-      ]
-    });
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+      const body = await request.json();
+      const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/products/url-ingest`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: request.headers.get("Authorization") || "",
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    return NextResponse.json(
+      { error: "Backend not configured. Please set BACKEND_URL environment variable." },
+      { status: 503 }
+    );
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || "URL ingest failed" }, { status: 400 });
+    return NextResponse.json(
+      { error: err.message || "URL ingest failed." },
+      { status: 502 }
+    );
   }
 }

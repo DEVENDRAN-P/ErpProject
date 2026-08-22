@@ -1,12 +1,29 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  return NextResponse.json({
-    overall_compliance_rate: 96,
-    total_products: 156,
-    by_category: {
-      "Industrial Automation": { total_products: 60, compliant: 58, pending: 1, non_compliant: 1 },
-      "Electrical Components": { total_products: 96, compliant: 92, pending: 2, non_compliant: 2 },
-    },
-  });
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  try {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+      const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/products/reports/compliance`, {
+        headers: {
+          Authorization: request.headers.get("Authorization") || "",
+        },
+      });
+      const data = await res.json();
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    return NextResponse.json(
+      { error: "Backend not configured. Please set BACKEND_URL environment variable." },
+      { status: 503 }
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch compliance report." },
+      { status: 502 }
+    );
+  }
 }

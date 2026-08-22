@@ -178,7 +178,7 @@ export async function ingestProduct(product: ProductCreateInput) {
   return payload;
 }
 
-import { getUserProducts, saveUserProduct, getUserDashboardStats, uploadUserDocument } from "@/lib/firestoreService";
+import { getUserProducts, getUserDashboardStats } from "@/lib/firestoreService";
 
 export async function fetchProducts(query = "") {
   const uid = auth?.currentUser?.uid;
@@ -254,26 +254,13 @@ export async function fetchDashboardStats() {
 }
 
 export async function fetchProductHealth(productId: number) {
-  const fallback = {
-    score: 87,
-    health_score: 87,
-    completeness: 88,
-    consistency: 80,
-    confidence: 85,
-    source_reliability: 90,
-    explanation: "Product health score calculated using weighted attribute completeness, consistency checks, model confidence, and document provenance reliability.",
-    breakdown: { completeness: 88, consistency: 80, confidence: 85, source_reliability: 90 },
-    recommendations: ["All mandatory nameplate specifications are verified against primary datasheet PDF."]
-  };
-  try {
-    const headers = await buildAuthHeaders();
-    const response = await fetch(`/api/products/${productId}/health`, { headers });
-    const payload = await parseJsonOrText(response);
-    if (!response.ok) return fallback;
-    return payload || fallback;
-  } catch {
-    return fallback;
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`/api/products/${productId}/health`, { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) {
+    throw new Error(typeof payload === "string" ? payload : payload?.detail || "Failed to load product health data.");
   }
+  return payload;
 }
 
 export async function validateProduct(productId: number) {
@@ -283,348 +270,56 @@ export async function validateProduct(productId: number) {
   if (!response.ok) {
     if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
     throw new Error(payload?.detail || "Validation failed.");
+  }  return payload;
+}
+
+export async function processWorkflow(formData: FormData) {
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/workflow/process", {
+    method: "POST",
+    body: formData,
+    headers,
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) {
+    if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
+    if (response.status === 413) throw new Error("File too large. Maximum upload size is 10 MB.");
+    if (response.status === 422) throw new Error(typeof payload === "string" ? payload : payload?.detail || "Validation failed. The document could not be processed.");
+    if (response.status === 400) throw new Error(typeof payload === "string" ? payload : payload?.detail || "Invalid request. Please check the file type and try again.");
+    throw new Error(typeof payload === "string" ? payload : payload?.detail || payload?.message || `Document analysis failed (HTTP ${response.status}).`);
   }
   return payload;
 }
 
-export function extractFromUploadedFile(filename: string) {
-  const fnameLower = filename.toLowerCase();
-
-  const validKeywords = [
-    "siemens", "motor", "1le1", "datasheet", "spec", "15kw", "pump", "abb", "schneider",
-    "catalog", "induction", "3phase", "drive", "electrical", "machine", "engine", "specifications",
-    "equipment", "nameplate", "inverter", "vfd", "transformer", "compressor", "fan", "blower"
-  ];
-
-  const isRelevant = validKeywords.some((kw) => fnameLower.includes(kw));
-
-  if (isRelevant) {
-    return {
-      success: true,
-      message: `Document extraction completed for ${filename}`,
-      filename,
-      product: {
-        id: Date.now(),
-        name: filename.replace(/\.[^/.]+$/, "").replace(/_/g, " "),
-        model_number: "1LE1001-1DB43-4AA4",
-        category: "Industrial Automation",
-        description: `Extracted specification attributes from datasheet ${filename}.`,
-        health_score: 92,
-        attributes: [
-          { key: "rated_power", label: "Rated Power", value: "15 kW", confidence: 0.98, status: "VERIFIED", source: filename, page: 1, evidence: "Rated power output: 15 kW @ 50 Hz" },
-          { key: "rated_voltage", label: "Rated Voltage", value: "415 V", confidence: 0.96, status: "VERIFIED", source: filename, page: 1, evidence: "Supply voltage: 400V/415V 50Hz" },
-          { key: "efficiency_class", label: "Efficiency Class", value: "IE3", confidence: 0.95, status: "VERIFIED", source: filename, page: 2, evidence: "Efficiency class IE3 according to IEC 60034-30-1" },
-          { key: "operating_speed", label: "Operating Speed", value: "1475 RPM", confidence: 0.94, status: "VERIFIED", source: filename, page: 2, evidence: "Nominal speed: 1475 r/min" },
-          { key: "enclosure_rating", label: "Enclosure Protection", value: "IP55", confidence: 0.99, status: "VERIFIED", source: filename, page: 3, evidence: "Degree of protection IP55" }
-        ],
-        review_items: [],
-        conflicts: [],
-        versions: []
-      }
-    };
-  }
-
-  return {
-    success: true,
-    message: `No industrial motor specifications detected in '${filename}'. Created product draft for manual review.`,
-    filename,
-    product: {
-      id: Date.now(),
-      name: `Uploaded File: ${filename}`,
-      model_number: "UNRESOLVED",
-      category: "Uncategorized Document",
-      description: `Uploaded file '${filename}' does not contain recognized industrial equipment specification schemas.`,
-      health_score: 25,
-      attributes: [
-        { key: "rated_power", label: "Rated Power", value: undefined, confidence: 0.0, status: "needs_review", source: filename, page: 1, evidence: "No rated power specification found." },
-        { key: "rated_voltage", label: "Rated Voltage", value: undefined, confidence: 0.0, status: "needs_review", source: filename, page: 1, evidence: "No supply voltage specification found." },
-        { key: "efficiency_class", label: "Efficiency Class", value: undefined, confidence: 0.0, status: "needs_review", source: filename, page: 1, evidence: "No efficiency class specification found." },
-        { key: "operating_speed", label: "Operating Speed", value: undefined, confidence: 0.0, status: "needs_review", source: filename, page: 1, evidence: "No rated speed specification found." },
-        { key: "enclosure_rating", label: "Enclosure Protection", value: undefined, confidence: 0.0, status: "needs_review", source: filename, page: 1, evidence: "No enclosure protection rating found." }
-      ],
-      review_items: [
-        { id: 1, title: `Unresolved File: ${filename}`, item_type: "missing", description: "Uploaded document contains no valid industrial specifications. Hand-enter parameters or upload a valid datasheet PDF.", action: "Add Manual Specs", status: "pending" }
-      ],
-      conflicts: [],
-      versions: []
-    }
-  };
-}
-
-function createDemoWorkflowResult(formData?: FormData) {
-  const file = formData?.get("file") as File | null;
-  const filename = file?.name || (formData?.get("url") as string) || "Siemens_1LE1001_Datasheet.pdf";
-  return extractFromUploadedFile(filename);
-}
-
-function createDemoUrlIngestResult(url: string) {
-  return {
-    success: true,
-    message: `URL extraction completed for ${url}`,
-    product_name: "Siemens 1LE1001 15kW Industrial Motor",
-    extracted_attributes: [
-      { key: "rated_power", label: "Rated Power", value: "15 kW", confidence: 0.95, source: url },
-      { key: "efficiency_class", label: "Efficiency Class", value: "IE3", confidence: 0.92, source: url }
-    ]
-  };
-}
-
-export function evaluateRagQuery(question: string, documentContext?: string, productId?: number) {
-  const trimmedQ = (question || "").trim();
-  if (!trimmedQ) {
-    return {
-      question: trimmedQ,
-      answer: "Please enter a valid question.",
-      has_evidence: false,
-      confidence: 0.0,
-      sources: [],
-      evidence_snippets: [],
-    };
-  }
-
-  const stopWords = new Set([
-    "what", "is", "the", "a", "an", "and", "or", "of", "to", "in", "for", "on", "with", "this",
-    "that", "it", "at", "by", "from", "as", "are", "was", "were", "be", "been", "being", "have",
-    "has", "had", "do", "does", "did", "can", "could", "should", "would", "which", "who", "whom",
-    "motor", "product", "item", "device", "show", "me", "tell", "about", "give", "detail", "details",
-    "value", "what's", "where", "how", "many", "much"
-  ]);
-
-  const rawTokens = trimmedQ.toLowerCase().match(/\b[a-z0-9_\-.°C]+\b/g) || [];
-  const queryTokens = rawTokens.filter((t) => t.length > 1 && !stopWords.has(t));
-
-  // If query tokens are empty or gibberish (e.g. "ghfhg", "asdf")
-  if (queryTokens.length === 0) {
-    return {
-      question: trimmedQ,
-      answer: "Insufficient evidence found in the document context or product database for this query.",
-      has_evidence: false,
-      confidence: 0.0,
-      sources: [],
-      evidence_snippets: [],
-    };
-  }
-
-  // 1. If documentContext is provided, search inside documentContext
-  if (documentContext && documentContext.trim().length > 0) {
-    const lines = documentContext
-      .split(/\n+|\. /)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 3);
-    const matchedSnippets: string[] = [];
-    let matchScore = 0;
-
-    for (const line of lines) {
-      const lineLower = line.toLowerCase();
-      let lineMatches = 0;
-      for (const token of queryTokens) {
-        if (lineLower.includes(token)) {
-          lineMatches++;
-        }
-      }
-      if (lineMatches > 0) {
-        matchedSnippets.push(line);
-        matchScore += lineMatches;
-      }
-    }
-
-    if (matchedSnippets.length > 0 && matchScore >= 1) {
-      const conf = Math.min(0.98, Math.max(0.65, 0.5 + matchScore * 0.15));
-      return {
-        question: trimmedQ,
-        answer: `Based on the provided document context: ${matchedSnippets.join(" ")}`,
-        has_evidence: true,
-        confidence: Number(conf.toFixed(2)),
-        sources: ["Uploaded Document Context"],
-        evidence_snippets: matchedSnippets.slice(0, 3),
-      };
-    } else {
-      return {
-        question: trimmedQ,
-        answer: "Insufficient evidence in the provided document context for this query.",
-        has_evidence: false,
-        confidence: 0.0,
-        sources: [],
-        evidence_snippets: [],
-      };
-    }
-  }
-
-  // 2. Default Knowledge Base for Siemens 1LE1001 Motor
-  const kbEntries = [
-    {
-      keywords: ["voltage", "volt", "volts", "415v", "400v", "690v", "delta", "star", "supply", "phase"],
-      answerSnippet: "The motor operates at a rated supply voltage of 415 V Delta / 690 V Star @ 50 Hz.",
-      evidence: "Supply voltage: 400V/415V Delta, 690V Star 50Hz",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-    {
-      keywords: ["power", "kw", "15kw", "watt", "hp", "output", "rating", "rated"],
-      answerSnippet: "The motor has a rated output power of 15 kW (20 HP) at 50 Hz.",
-      evidence: "Rated power output: 15 kW @ 50 Hz",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-    {
-      keywords: ["efficiency", "ie3", "class", "92.6%", "loss", "energy", "ie2", "ie4"],
-      answerSnippet: "The motor features an IE3 Premium Efficiency rating (92.6% efficiency compliant with IEC 60034-30-1).",
-      evidence: "Efficiency class IE3 according to IEC 60034-30-1",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-    {
-      keywords: ["speed", "rpm", "1475", "rotation", "nominal", "operating", "frequency", "50hz"],
-      answerSnippet: "The nominal full-load operating speed is 1475 RPM (4-pole configuration at 50 Hz).",
-      evidence: "Nominal speed: 1475 r/min",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-    {
-      keywords: ["enclosure", "ip55", "protection", "ingress", "ip", "dust", "water", "casing"],
-      answerSnippet: "The motor housing features IP55 degree of environmental ingress protection.",
-      evidence: "Degree of protection IP55",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-    {
-      keywords: ["current", "amps", "ampere", "28.5a", "28.5", "load"],
-      answerSnippet: "Full load current rating is 28.5 A at 415 V.",
-      evidence: "Full load current: 28.5 A at 415V",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-    {
-      keywords: ["frame", "size", "160m", "cast", "iron", "mounting"],
-      answerSnippet: "The motor frame is IEC 160M cast iron structure.",
-      evidence: "IEC Frame Size: 160M cast iron structure",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-    {
-      keywords: ["temperature", "thermal", "insulation", "155", "class f", "heat"],
-      answerSnippet: "Thermal insulation class is Class F (155°C maximum temperature rise limit).",
-      evidence: "Thermal Insulation: Class F (155°C max rise limit)",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-    {
-      keywords: ["siemens", "1le1001", "model", "number", "1le1001-1db43-4aa4", "brand", "manufacturer"],
-      answerSnippet: "Siemens 1LE1001 15kW 3-Phase AC Induction Motor (Model: 1LE1001-1DB43-4AA4).",
-      evidence: "Siemens 1LE1001 15kW 3-Phase Industrial Motor",
-      source: "Siemens_1LE1001_Datasheet.pdf",
-    },
-  ];
-
-  const matchedEntries: typeof kbEntries = [];
-  const sourcesSet = new Set<string>();
-  const snippets: string[] = [];
-
-  for (const entry of kbEntries) {
-    const hasMatch = queryTokens.some((qTok) =>
-      entry.keywords.some((kw) => kw.includes(qTok) || qTok.includes(kw))
-    );
-    if (hasMatch) {
-      matchedEntries.push(entry);
-      sourcesSet.add(entry.source);
-      snippets.push(entry.evidence);
-    }
-  }
-
-  if (matchedEntries.length > 0) {
-    const answerText = `Based on the technical datasheet for Siemens 1LE1001: ${matchedEntries.map((e) => e.answerSnippet).join(" ")}`;
-    return {
-      question: trimmedQ,
-      answer: answerText,
-      has_evidence: true,
-      confidence: 0.95,
-      sources: Array.from(sourcesSet),
-      evidence_snippets: snippets,
-    };
-  }
-
-  return {
-    question: trimmedQ,
-    answer: "Insufficient evidence found in the technical datasheet or knowledge base to answer this question.",
-    has_evidence: false,
-    confidence: 0.0,
-    sources: [],
-    evidence_snippets: [],
-  };
-}
-
-function createDemoRagResult(question: string, documentContext?: string, productId?: number) {
-  return evaluateRagQuery(question, documentContext, productId);
-}
-
-export async function processWorkflow(formData: FormData) {
-  try {
-    const headers = await buildAuthHeaders();
-    const response = await fetch("/api/workflow/process", {
-      method: "POST",
-      body: formData,
-      headers,
-    });
-    const uid = auth?.currentUser?.uid;
-    const payload = await parseJsonOrText(response);
-    if (!response.ok) {
-      if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
-      if (response.status === 404 || typeof payload === "string") {
-        const demoRes = createDemoWorkflowResult();
-        if (uid && demoRes.product) {
-          await saveUserProduct(uid, demoRes.product as any).catch(() => {});
-        }
-        return demoRes;
-      }
-      throw new Error(payload?.detail || payload?.message || "Unable to process workflow.");
-    }
-    if (uid && payload?.product) {
-      await saveUserProduct(uid, payload.product).catch(() => {});
-    }
-    return payload;
-  } catch (err: any) {
-    if (err.message?.includes("expired")) throw err;
-    const uid = auth?.currentUser?.uid;
-    const demoRes = createDemoWorkflowResult();
-    if (uid && demoRes.product) {
-      await saveUserProduct(uid, demoRes.product as any).catch(() => {});
-    }
-    return demoRes;
-  }
-}
-
 export async function ingestUrl(url: string) {
-  try {
-    const headers = await buildAuthHeaders("application/json");
-    const response = await fetch("/api/products/url-ingest", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ url }),
-    });
-    const payload = await parseJsonOrText(response);
-    if (!response.ok) {
-      if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
-      if (response.status === 404 || typeof payload === "string") return createDemoUrlIngestResult(url);
-      throw new Error(payload?.detail || payload?.message || "Failed to fetch URL.");
-    }
-    return payload;
-  } catch (err: any) {
-    if (err.message?.includes("expired")) throw err;
-    return createDemoUrlIngestResult(url);
+  const headers = await buildAuthHeaders("application/json");
+  const response = await fetch("/api/products/url-ingest", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ url }),
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) {
+    if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
+    if (response.status === 422) throw new Error(typeof payload === "string" ? payload : payload?.detail || "Unable to ingest URL. The website may be unreachable or contain no extractable content.");
+    throw new Error(typeof payload === "string" ? payload : payload?.detail || payload?.message || "Failed to fetch URL.");
   }
+  return payload;
 }
 
 export async function queryRag(question: string, documentContext?: string, productId?: number) {
-  try {
-    const headers = await buildAuthHeaders("application/json");
-    const response = await fetch("/api/rag/query", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ question, document_context: documentContext, product_id: productId }),
-    });
-    const payload = await parseJsonOrText(response);
-    if (!response.ok) {
-      if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
-      if (response.status === 404 || typeof payload === "string") return createDemoRagResult(question, documentContext, productId);
-      throw new Error(payload?.detail || "RAG query failed.");
-    }
-    return payload;
-  } catch (err: any) {
-    if (err.message?.includes("expired")) throw err;
-    return createDemoRagResult(question, documentContext, productId);
+  const headers = await buildAuthHeaders("application/json");
+  const response = await fetch("/api/rag/query", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ question, document_context: documentContext, product_id: productId }),
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) {
+    if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
+    throw new Error(typeof payload === "string" ? payload : payload?.detail || "RAG query failed.");
   }
+  return payload;
 }
 
 export async function executeReviewAction(reviewId: number, action: string, editedValue?: string, comment?: string) {
@@ -761,64 +456,31 @@ export async function downloadBatchExport(format: string = "json", category?: st
 }
 
 export async function fetchDataQualityReport() {
-  const fallback = {
-    total_products: 156,
-    overall_quality_score: 91,
-    total_attributes: 1240,
-    filled_attributes: 1165,
-    completeness_rate: 94,
-    total_conflicts: 5,
-    resolved_conflicts: 4,
-    conflict_rate: 3.2,
-    resolution_rate: 92,
-    health_distribution: { excellent: 110, attention: 38, needs_review: 8 },
-    completeness_by_category: {
-      "Industrial Automation": { total: 60, filled: 57, completeness_pct: 95 },
-      "Electrical Components": { total: 96, filled: 88, completeness_pct: 92 },
-    },
-    missing_by_attribute: { "Warranty Period": 5, "Certifications": 3 },
-  };
-  try {
-    const headers = await buildAuthHeaders();
-    const response = await fetch("/api/products/reports/data-quality", { headers });
-    const payload = await parseJsonOrText(response);
-    if (!response.ok || !payload || typeof payload !== "object") return fallback;
-    return { ...fallback, ...payload };
-  } catch {
-    return fallback;
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/products/reports/data-quality", { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok || !payload || typeof payload !== "object") {
+    throw new Error(typeof payload === "string" ? payload : payload?.detail || "Failed to load data quality report.");
   }
+  return payload;
 }
 
 export async function fetchComplianceReport() {
-  const fallback = {
-    overall_compliance_rate: 96,
-    total_products: 156,
-    by_category: {
-      "Industrial Automation": { total_products: 60, compliant: 58, pending: 1, non_compliant: 1 },
-      "Electrical Components": { total_products: 96, compliant: 92, pending: 2, non_compliant: 2 },
-    },
-  };
-  try {
-    const headers = await buildAuthHeaders();
-    const response = await fetch("/api/products/reports/compliance", { headers });
-    const payload = await parseJsonOrText(response);
-    if (!response.ok || !payload || typeof payload !== "object") return fallback;
-    return { ...fallback, ...payload };
-  } catch {
-    return fallback;
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/products/reports/compliance", { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok || !payload || typeof payload !== "object") {
+    throw new Error(typeof payload === "string" ? payload : payload?.detail || "Failed to load compliance report.");
   }
+  return payload;
 }
 
 export async function fetchAuditTrail() {
-  try {
-    const headers = await buildAuthHeaders();
-    const response = await fetch("/api/products/reports/audit-trail", { headers });
-    const payload = await parseJsonOrText(response);
-    if (!response.ok) return [];
-    return Array.isArray(payload) ? payload : [];
-  } catch {
-    return [];
-  }
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/products/reports/audit-trail", { headers });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) return [];
+  return Array.isArray(payload) ? payload : [];
 }
 
 // ─── Team 4: Notifications API ──────────────────────────────────────────

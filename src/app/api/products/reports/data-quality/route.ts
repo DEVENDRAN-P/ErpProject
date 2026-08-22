@@ -1,21 +1,29 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  return NextResponse.json({
-    total_products: 156,
-    overall_quality_score: 91,
-    total_attributes: 1240,
-    filled_attributes: 1165,
-    completeness_rate: 94,
-    total_conflicts: 5,
-    resolved_conflicts: 4,
-    conflict_rate: 3.2,
-    resolution_rate: 92,
-    health_distribution: { excellent: 110, attention: 38, needs_review: 8 },
-    completeness_by_category: {
-      "Industrial Automation": { total: 60, filled: 57, completeness_pct: 95 },
-      "Electrical Components": { total: 96, filled: 88, completeness_pct: 92 },
-    },
-    missing_by_attribute: { "Warranty Period": 5, "Certifications": 3 },
-  });
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  try {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+      const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/products/reports/data-quality`, {
+        headers: {
+          Authorization: request.headers.get("Authorization") || "",
+        },
+      });
+      const data = await res.json();
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    return NextResponse.json(
+      { error: "Backend not configured. Please set BACKEND_URL environment variable." },
+      { status: 503 }
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch data quality report." },
+      { status: 502 }
+    );
+  }
 }

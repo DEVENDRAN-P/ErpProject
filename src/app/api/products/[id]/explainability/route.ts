@@ -3,12 +3,27 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
-  return NextResponse.json({
-    overall_confidence: 0.96,
-    attributes_breakdown: [
-      { key: "rated_power", label: "Rated Power", value: "15 kW", confidence: 0.98, source: "Siemens_1LE1001_Datasheet.pdf", evidence: "Rated power output: 15 kW @ 50 Hz", rationale: "Extracted directly from technical spec sheet table section 1." },
-      { key: "rated_voltage", label: "Rated Voltage", value: "415 V", confidence: 0.96, source: "Siemens_1LE1001_Datasheet.pdf", evidence: "Supply voltage: 400V/415V 50Hz", rationale: "Matched electrical operating standard for 3-phase delta config." },
-      { key: "efficiency_class", label: "Efficiency Class", value: "IE3", confidence: 0.95, source: "Siemens_1LE1001_Datasheet.pdf", evidence: "Efficiency class IE3 according to IEC 60034-30-1", rationale: "Validated against international IEC standard compliance register." }
-    ]
-  });
+  try {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+      const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/products/${params.id}/explainability`, {
+        headers: {
+          Authorization: request.headers.get("Authorization") || "",
+        },
+      });
+      const data = await res.json();
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    return NextResponse.json(
+      { error: "Backend not configured. Please set BACKEND_URL environment variable." },
+      { status: 503 }
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch explainability data." },
+      { status: 502 }
+    );
+  }
 }

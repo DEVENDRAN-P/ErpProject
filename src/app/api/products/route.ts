@@ -1,22 +1,30 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  return NextResponse.json([
-    {
-      id: 101,
-      name: "Siemens 1LE1001 15kW Industrial Motor",
-      model_number: "1LE1001-1DB43-4AA4",
-      category: "Industrial Automation",
-      description: "High-efficiency 15 kW 3-phase AC induction motor with IP55 enclosure protection.",
-      health_score: 92,
-      attributes: [
-        { key: "rated_power", label: "Rated Power", value: "15 kW", confidence: 0.98, status: "VERIFIED" },
-        { key: "rated_voltage", label: "Rated Voltage", value: "415 V", confidence: 0.96, status: "VERIFIED" },
-        { key: "efficiency_class", label: "Efficiency Class", value: "IE3", confidence: 0.95, status: "VERIFIED" },
-        { key: "operating_speed", label: "Operating Speed", value: "1475 RPM", confidence: 0.94, status: "VERIFIED" },
-        { key: "enclosure_rating", label: "Enclosure Protection", value: "IP55", confidence: 0.99, status: "VERIFIED" }
-      ],
-      review_items: []
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  try {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+      const url = new URL(request.url);
+      const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/products${url.search}`, {
+        headers: {
+          Authorization: request.headers.get("Authorization") || "",
+        },
+      });
+      const data = await res.json();
+      return NextResponse.json(data, { status: res.status });
     }
-  ]);
+
+    return NextResponse.json(
+      { error: "Backend not configured. Please set BACKEND_URL environment variable." },
+      { status: 503 }
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch products." },
+      { status: 502 }
+    );
+  }
 }

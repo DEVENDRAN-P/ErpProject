@@ -1,12 +1,29 @@
 import { NextResponse } from "next/server";
-import { evaluateRagQuery } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { question, document_context, product_id } = body || {};
-    const result = evaluateRagQuery(question || "", document_context, product_id);
-    return NextResponse.json(result);
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+      const body = await request.json();
+      const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/rag/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: request.headers.get("Authorization") || "",
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    return NextResponse.json(
+      { error: "Backend not configured. Please set BACKEND_URL environment variable." },
+      { status: 503 }
+    );
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || "Failed to evaluate RAG query" },
