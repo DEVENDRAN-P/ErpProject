@@ -283,7 +283,6 @@ export default function ProductTwinSection() {
                         <button
                           key={n.id}
                           onClick={() => setSelectedNode(n)}
-                          style={{ left: n.x - 50, top: n.y - 20 }}
                           className={`absolute px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-lg transition-all duration-200 flex items-center gap-1.5 border ${
                             isSelected
                               ? "scale-110 ring-4 ring-blue-500/40 border-white text-white z-10"
