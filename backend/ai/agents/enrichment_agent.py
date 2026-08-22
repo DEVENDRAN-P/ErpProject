@@ -303,154 +303,288 @@ def extract_attribute_with_context(
     }
 
 
-def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
-    print(f"[ENRICH DIAG] Starting extraction, text_length={len(input_text)}")
+# ---------------------------------------------------------------------------
+# Known valid Gemini API model names (stable, as of Aug 2026)
+# Used to validate GEMINI_MODELS env var and skip invalid entries.
+# ---------------------------------------------------------------------------
+_KNOWN_GEMINI_MODELS = {
+    # Gemini 3.x (newest stable)
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    # Gemini 2.5 (still available)
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-pro",
+}
+
+# Default model list — newest first, with a fast fallback.
+# As of Aug 2026: 2.5 models return 404, 2.0 models shut down.
+# Use 3.x stable models (confirmed working on Gemini REST API).
+_DEFAULT_GEMINI_MODELS = "gemini-2.5-flash-lite,gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.1-flash-lite"
+
+
+def _gemini_extract(input_text: str) -> Dict[str, Any] | None:
+    """Try Gemini extraction via REST API. Returns result dict or None on failure.
+
+    Structured diagnostic logs (no API key exposed):
+        GEMINI_API_KEY configured: true/false
+        Gemini initialization: success/failure (<reason>)
+        Gemini model selected: <model>
+        Gemini request: started
+        Gemini request: success/failure (<reason>)
+        Gemini response parsed: success/failure (<reason>)
+        Fallback activated: true/false
+        llm_used: gemini
+    """
+    # ── 1. Key detection ──────────────────────────────────────────────
+    gemini_key = getattr(settings, "gemini_api_key", None) or os.getenv("GEMINI_API_KEY", "")
+    key_present = bool(gemini_key and gemini_key.strip())
+    print(f"GEMINI_API_KEY configured: {str(key_present).lower()}")
+
+    if not key_present:
+        print(f"Gemini initialization: failure (no API key in settings or env)")
+        print(f"Fallback activated: true")
+        return None
+
+    # ── 2. Model list ─────────────────────────────────────────────────
+    _default_list = [m.strip() for m in _DEFAULT_GEMINI_MODELS.split(",") if m.strip()]
+    raw_models = os.getenv("GEMINI_MODELS", "")
+    if raw_models.strip():
+        gemini_models = [m.strip() for m in raw_models.split(",") if m.strip()]
+    else:
+        gemini_models = _default_list
+
+    # Validate each model against known names; skip unknown ones
+    validated = []
+    for m in gemini_models:
+        if m in _KNOWN_GEMINI_MODELS:
+            validated.append(m)
+        else:
+            print(f"Gemini initialization: warning (unknown model '{m}' skipped — not in known model list)")
+    gemini_models = validated if validated else _default_list
+
+    if not gemini_models:
+        print(f"Gemini initialization: failure (no valid models after validation)")
+        print(f"Fallback activated: true")
+        return None
+
+    print(f"Gemini initialization: success")
+
+    # ── 3. Build prompt ───────────────────────────────────────────────
+    prompt = (
+        "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
+        "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
+        "Extract attributes that are PRESENT in the document. Do NOT extract attributes that are not mentioned.\n\n"
+        "Return a JSON object with key 'attributes' containing an array of objects, each with:\n"
+        "- key: snake_case attribute name\n"
+        "- label: Human-readable label\n"
+        "- value: The extracted value as a string, or null if not found\n"
+        "- unit: The unit of measurement, or empty string\n"
+        "- confidence: 0.0 to 1.0\n"
+        "- evidence: Exact quote from the document\n"
+        "- status: 'verified' if explicitly stated, 'needs_review' if ambiguous, 'not_found' if absent\n\n"
+        "Rules:\n"
+        "- Never invent specifications not present in the text\n"
+        "- If an attribute is not in the document, include it with value=null, status='not_found'\n"
+        "- Always include: product_name, product_type/category, manufacturer/brand\n"
+        "- Include any other specifications you find (dimensions, materials, ratings, standards, etc.)\n\n"
+        f"Document text:\n{input_text[:4000]}"
+    )
+    payload = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"responseMimeType": "application/json"}
+    }).encode("utf-8")
+
+    # ── 4. Try each model ─────────────────────────────────────────────
+    import urllib.request
+    import urllib.error
+
+    for model_name in gemini_models:
+        print(f"Gemini model selected: {model_name}")
+        print(f"Gemini request: started")
+
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/"
+            f"models/{model_name}:generateContent?key={gemini_key}"
+        )
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+
+            # Extract text from Gemini response
+            candidates = data.get("candidates", [])
+            if not candidates:
+                print(f"Gemini request: failure (empty candidates list)")
+                print(f"Fallback activated: true")
+                return None
+
+            raw_text = (
+                candidates[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
+            print(f"Gemini request: success")
+
+            # ── 5. Parse JSON response ────────────────────────────────
+            if not raw_text or "{" not in raw_text:
+                print(f"Gemini response parsed: failure (no JSON in response, first 200 chars: {raw_text[:200] if raw_text else 'None'})")
+                print(f"Fallback activated: true")
+                return None
+
+            json_str = raw_text[raw_text.find("{"):raw_text.rfind("}") + 1]
+            parsed = json.loads(json_str)
+
+            if not isinstance(parsed.get("attributes"), list):
+                print(f"Gemini response parsed: failure (no 'attributes' array in response)")
+                print(f"Fallback activated: true")
+                return None
+
+            attributes = parsed["attributes"]
+            print(f"Gemini response parsed: success")
+            print(f"Fallback activated: false")
+            print(f"llm_used: gemini")
+            return {
+                "type": "enrichment",
+                "llm_used": "gemini",
+                "product_name": input_text[:100],
+                "attributes": attributes,
+                "applications": parsed.get("applications", []),
+                "industries": parsed.get("industries", []),
+                "tags": parsed.get("tags", []),
+            }
+
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8", errors="ignore")[:200]
+            if e.code == 404:
+                print(f"Gemini request: failure (model '{model_name}' not found — HTTP 404, trying next model)")
+                continue  # Try next model
+            else:
+                print(f"Gemini request: failure (HTTP {e.code}: {error_body})")
+                print(f"Fallback activated: true")
+                return None
+
+        except json.JSONDecodeError as e:
+            print(f"Gemini request: success (HTTP 200) but response parsed: failure (invalid JSON: {e})")
+            print(f"Fallback activated: true")
+            return None
+
+        except Exception as e:
+            print(f"Gemini request: failure ({type(e).__name__}: {e})")
+            print(f"Fallback activated: true")
+            return None
+
+    # All models failed (all 404)
+    print(f"Gemini request: failure (all {len(gemini_models)} models returned HTTP 404)")
+    print(f"Fallback activated: true")
+    return None
+
+
+def _openai_extract(input_text: str) -> Dict[str, Any] | None:
+    """Try OpenAI extraction. Returns result dict or None on failure."""
     api_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY", "")
     print(f"[ENRICH DIAG] OpenAI key present={bool(api_key and api_key.strip())}")
+    if not api_key or not openai:
+        return None
+    try:
+        client = openai.OpenAI(api_key=api_key)
+        prompt = (
+            "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
+            "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
+            "Extract attributes that are PRESENT in the document. Do NOT extract attributes that are not mentioned.\n\n"
+            "Return a JSON object with key 'attributes' containing an array of objects, each with:\n"
+            "- key: snake_case attribute name (e.g. 'rated_power', 'grit_size', 'disc_diameter', 'abrasive_type', 'max_rpm', 'backing_type', 'bond_type')\n"
+            "- label: Human-readable label\n"
+            "- value: The extracted value as a string, or null if not found\n"
+            "- unit: The unit of measurement, or empty string\n"
+            "- confidence: 0.0 to 1.0 based on how certain you are\n"
+            "- evidence: Exact quote from the document supporting this value\n"
+            "- status: 'verified' if explicitly stated, 'needs_review' if ambiguous, 'not_found' if absent\n\n"
+            "Rules:\n"
+            "- Never invent specifications not present in the text\n"
+            "- If an attribute is not in the document, include it with value=null, status='not_found'\n"
+            "- Always include: product_name, product_type/category, manufacturer/brand\n"
+            "- Include any other specifications you find (dimensions, materials, ratings, standards, etc.)\n\n"
+            f"Document text:\n{input_text[:4000]}"
+        )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.1,
+        )
+        raw = response.choices[0].message.content
+        parsed = json.loads(raw)
+        if "attributes" in parsed:
+            attributes = parsed["attributes"]
+            for attr in attributes:
+                if "raw_value" not in attr:
+                    attr["raw_value"] = attr.get("value")
+                if "normalized_value" not in attr:
+                    attr["normalized_value"] = attr.get("value")
+                if "validation" not in attr:
+                    attr["validation"] = {}
+                if "reason" not in attr:
+                    attr["reason"] = ""
+                status = attr.get("status", "verified")
+                if status not in ("verified", "needs_review", "not_found"):
+                    attr["status"] = "needs_review"
+            return {
+                "type": "enrichment",
+                "llm_used": "openai",
+                "product_name": input_text[:100],
+                "attributes": parsed["attributes"],
+                "applications": parsed.get("applications", []),
+                "industries": parsed.get("industries", []),
+                "tags": parsed.get("tags", []),
+            }
+    except Exception as e:
+        print(f"[OPENAI EXTRACTION ERROR] {e}")
+    return None
 
-    if api_key and openai:
-        try:
-            client = openai.OpenAI(api_key=api_key)
-            prompt = (
-                "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
-                "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
-                "Extract attributes that are PRESENT in the document. Do NOT extract attributes that are not mentioned.\n\n"
-                "Return a JSON object with key 'attributes' containing an array of objects, each with:\n"
-                "- key: snake_case attribute name (e.g. 'rated_power', 'grit_size', 'disc_diameter', 'abrasive_type', 'max_rpm', 'backing_type', 'bond_type')\n"
-                "- label: Human-readable label\n"
-                "- value: The extracted value as a string, or null if not found\n"
-                "- unit: The unit of measurement, or empty string\n"
-                "- confidence: 0.0 to 1.0 based on how certain you are\n"
-                "- evidence: Exact quote from the document supporting this value\n"
-                "- status: 'verified' if explicitly stated, 'needs_review' if ambiguous, 'not_found' if absent\n\n"
-                "Rules:\n"
-                "- Never invent specifications not present in the text\n"
-                "- If an attribute is not in the document, include it with value=null, status='not_found'\n"
-                "- Always include: product_name, product_type/category, manufacturer/brand\n"
-                "- Include any other specifications you find (dimensions, materials, ratings, standards, etc.)\n\n"
-                f"Document text:\n{input_text[:4000]}"
-            )
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
-                temperature=0.1,
-            )
-            raw = response.choices[0].message.content
-            parsed = json.loads(raw)
-            if "attributes" in parsed:
-                # Post-process LLM output to ensure proper structure
-                attributes = parsed["attributes"]
-                for attr in attributes:
-                    attr_key = attr.get("key", "")
-                    if "raw_value" not in attr:
-                        attr["raw_value"] = attr.get("value")
-                    if "normalized_value" not in attr:
-                        attr["normalized_value"] = attr.get("value")
-                    if "validation" not in attr:
-                        attr["validation"] = {}
-                    if "reason" not in attr:
-                        attr["reason"] = ""
-                    status = attr.get("status", "verified")
-                    if status not in ("verified", "needs_review", "not_found"):
-                        attr["status"] = "needs_review"
-                return {
-                    "type": "enrichment",
-                    "llm_used": "openai",
-                    "product_name": input_text[:100],
-                    "attributes": parsed["attributes"],
-                    "applications": parsed.get("applications", []),
-                    "industries": parsed.get("industries", []),
-                    "tags": parsed.get("tags", []),
-                }
-        except Exception as e:
-            print(f"[OPENAI EXTRACTION ERROR] {e}")
 
-    # Gemini LLM Extraction (using REST API directly to avoid SDK import timeout)
-    gemini_key = getattr(settings, "gemini_api_key", None) or os.getenv("GEMINI_API_KEY", "")
-    gemini_key_present = bool(gemini_key and gemini_key.strip())
-    # Model list: try stable models in order — newest first, fallback to older
-    gemini_models = [
-        m.strip() for m in os.getenv(
-            "GEMINI_MODELS",
-            "gemini-3.6-flash,gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash",
-        ).split(",")
-        if m.strip()
-    ]
-    print(f"[GEMINI DIAG] key_present={gemini_key_present} key_length={len(gemini_key) if gemini_key else 0} models={gemini_models}")
-    if gemini_key_present:
-        try:
-            import urllib.request
-            import urllib.error
-            prompt = (
-                "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
-                "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
-                "Extract attributes that are PRESENT in the document. Do NOT extract attributes that are not mentioned.\n\n"
-                "Return a JSON object with key 'attributes' containing an array of objects, each with:\n"
-                "- key: snake_case attribute name\n"
-                "- label: Human-readable label\n"
-                "- value: The extracted value as a string, or null if not found\n"
-                "- unit: The unit of measurement, or empty string\n"
-                "- confidence: 0.0 to 1.0\n"
-                "- evidence: Exact quote from the document\n"
-                "- status: 'verified' if explicitly stated, 'needs_review' if ambiguous, 'not_found' if absent\n\n"
-                "Rules:\n"
-                "- Never invent specifications not present in the text\n"
-                "- If an attribute is not in the document, include it with value=null, status='not_found'\n"
-                "- Always include: product_name, product_type/category, manufacturer/brand\n"
-                "- Include any other specifications you find (dimensions, materials, ratings, standards, etc.)\n\n"
-                f"Document text:\n{input_text[:4000]}"
-            )
-            payload = json.dumps({
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"responseMimeType": "application/json"}
-            }).encode("utf-8")
+def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
+    """Run enrichment: Gemini → OpenAI → rule-based fallback.
 
-            for model_name in gemini_models:
-                print(f"[GEMINI DIAG] Trying model: {model_name}")
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
-                req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
-                try:
-                    with urllib.request.urlopen(req, timeout=60) as resp:
-                        data = json.loads(resp.read().decode("utf-8"))
-                    raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    print(f"[GEMINI DIAG] Response received from {model_name}, length={len(raw) if raw else 0}")
-                    if raw and "{" in raw:
-                        json_str = raw[raw.find("{"):raw.rfind("}")+1]
-                        parsed = json.loads(json_str)
-                        if "attributes" in parsed and isinstance(parsed["attributes"], list):
-                            print(f"[GEMINI DIAG] SUCCESS - extracted {len(parsed['attributes'])} attributes via Gemini ({model_name})")
-                            return {
-                                "type": "enrichment",
-                                "llm_used": f"gemini-{model_name}",
-                                "product_name": input_text[:100],
-                                "attributes": parsed["attributes"],
-                                "applications": parsed.get("applications", []),
-                                "industries": parsed.get("industries", []),
-                                "tags": parsed.get("tags", []),
-                            }
-                        else:
-                            print(f"[GEMINI DIAG] Response parsed but no 'attributes' array found")
-                    else:
-                        print(f"[GEMINI DIAG] Response has no JSON (first 200 chars: {raw[:200] if raw else 'None'})")
-                    break  # Got a response (even if malformed) — don't try next model
-                except urllib.error.HTTPError as e:
-                    error_body = e.read().decode("utf-8", errors="ignore")[:200]
-                    print(f"[GEMINI DIAG] {model_name} HTTP error {e.code}: {error_body}")
-                    if e.code == 404:
-                        print(f"[GEMINI DIAG] Model {model_name} not available, trying next...")
-                        continue  # Try next model
-                    break  # Non-404 error — stop trying
-                except Exception as e:
-                    print(f"[GEMINI DIAG] {model_name} failed: {type(e).__name__}: {e}")
-                    break
-        except Exception as e:
-            print(f"[GEMINI DIAG] Gemini setup failed: {type(e).__name__}: {e}")
-    else:
-        print(f"[GEMINI DIAG] No Gemini key - settings={bool(getattr(settings, 'gemini_api_key', ''))} env={bool(os.getenv('GEMINI_API_KEY'))}")
+    Structured diagnostic logs (no API key exposed):
+        Extraction started, text_length=<n>
+        GEMINI_API_KEY configured: true/false
+        Gemini initialization: success/failure
+        Gemini model selected: <model>
+        Gemini request: started
+        Gemini request: success/failure
+        Gemini response parsed: success/failure
+        Fallback activated: true/false
+        llm_used: gemini | openai | None
+    """
+    print(f"Extraction started, text_length={len(input_text)}")
+
+    # 1) Try Gemini first (free tier)
+    gemini_result = _gemini_extract(input_text)
+    if gemini_result:
+        return gemini_result
+
+    # 2) Fall back to OpenAI
+    openai_result = _openai_extract(input_text)
+    if openai_result:
+        print(f"Fallback activated: false")
+        print(f"llm_used: openai")
+        return openai_result
 
     # Rule-based extraction fallback
-    print("[ENRICH DIAG] Using rule-based extraction fallback (no LLM succeeded)")
+    print(f"Fallback activated: true")
+    print(f"llm_used: None")
+    print(f"[ENRICH DIAG] Using rule-based extraction fallback (no LLM succeeded)")
     text_lower = input_text.lower()
 
     # Extract all candidate values with their positions for context-aware processing
