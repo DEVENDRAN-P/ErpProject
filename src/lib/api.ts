@@ -19,6 +19,7 @@ export type TokenResponse = {
 
 /** Get the current Firebase user's ID token (or null if not signed in). */
 export async function getIdToken(): Promise<string | null> {
+  if (!auth) return null;
   const user = auth.currentUser;
   if (!user) return null;
   try {
@@ -47,7 +48,7 @@ export function removeAccessToken() {
 }
 
 export function isTokenValid(): boolean {
-  return !!auth.currentUser;
+  return !!auth?.currentUser;
 }
 
 // ---------------------------------------------------------------------------

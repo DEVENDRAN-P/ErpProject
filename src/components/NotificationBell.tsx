@@ -34,6 +34,10 @@ export default function NotificationBell() {
 
   // ── Firebase auth listener ────────────────────────────────────────────
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
     const unsub = onAuthStateChanged(auth, (user) => {
       setUserId(user?.uid ?? null);
     });

@@ -1,6 +1,6 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,10 +11,24 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Prevent double initialization during HMR / fast refresh
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+/** Check if all required Firebase config values are present. */
+function isFirebaseConfigured(): boolean {
+  return !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+}
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Only initialize Firebase if config is present (prevents build-time crashes on Vercel)
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+
+if (isFirebaseConfigured()) {
+  try {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (err) {
+    console.warn("Firebase initialization failed:", err);
+  }
+}
 
 export { app, auth, db };

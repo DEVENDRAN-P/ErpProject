@@ -17,7 +17,7 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
-const googleProvider = new GoogleAuthProvider();
+const googleProvider = typeof GoogleAuthProvider !== "undefined" ? new GoogleAuthProvider() : null;
 
 interface AuthContextType {
   user: User | null;
@@ -71,6 +71,7 @@ function friendlyAuthError(error: any): string {
 /** Save or update user profile in Firestore.
  *  Gracefully handles permission errors when Firestore rules are not deployed. */
 async function saveUserProfile(user: User, extra?: Record<string, any>) {
+  if (!db) return; // Firebase not configured
   try {
     const userRef = doc(db, "users", user.uid);
     const existing = await getDoc(userRef);
@@ -103,6 +104,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Subscribe to Firebase Auth state on mount
   useEffect(() => {
+    if (!auth) {
+      // Firebase not configured — stay in logged-out state
+      setLoading(false);
+      return;
+    }
+
     // Handle redirect result (from signInWithRedirect fallback)
     getRedirectResult(auth)
       .then(async (result) => {
@@ -122,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_* environment variables.");
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
@@ -130,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loginWithGoogle = useCallback(async () => {
+    if (!auth || !googleProvider) throw new Error("Firebase is not configured.");
     try {
       const result = await signInWithPopup(auth, googleProvider);
       // Save/update user profile in Firestore
@@ -150,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(
     async (email: string, password: string, displayName: string) => {
+      if (!auth) throw new Error("Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_* environment variables.");
       try {
         // 1. Create Firebase Auth account
         const cred = await createUserWithEmailAndPassword(auth, email, password);
@@ -169,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const registerWithGoogle = useCallback(async () => {
+    if (!auth || !googleProvider) throw new Error("Firebase is not configured.");
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await saveUserProfile(result.user, { authProvider: "google" }).catch(() => {});
@@ -186,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (!auth) return;
     try {
       await signOut(auth);
     } catch (err: any) {
@@ -194,6 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
+    if (!auth) throw new Error("Firebase is not configured.");
     try {
       await sendPasswordResetEmail(auth, email);
     } catch (err: any) {
@@ -202,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateProfilePhoto = useCallback(async (file: File): Promise<string> => {
-    if (!auth.currentUser) throw new Error("Not authenticated.");
+    if (!auth?.currentUser) throw new Error("Not authenticated.");
     const uid = auth.currentUser.uid;
 
     // Convert file to Base64 Data URL instead of using paid Firebase Storage
@@ -217,12 +230,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await updateProfile(auth.currentUser, { photoURL: downloadURL });
 
     // Update Firestore document (gracefully handle permission errors)
-    try {
-      const userRef = doc(db, "users", uid);
-      await setDoc(userRef, { photoURL: downloadURL, updatedAt: serverTimestamp() }, { merge: true });
-    } catch (err: any) {
-      if (err?.code !== "permission-denied") throw err;
-      // Firestore rules not deployed — continue without Firestore write
+    if (db) {
+      try {
+        const userRef = doc(db, "users", uid);
+        await setDoc(userRef, { photoURL: downloadURL, updatedAt: serverTimestamp() }, { merge: true });
+      } catch (err: any) {
+        if (err?.code !== "permission-denied") throw err;
+        // Firestore rules not deployed — continue without Firestore write
+      }
     }
 
     // Force re-render with updated photo
