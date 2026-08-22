@@ -323,7 +323,7 @@ _KNOWN_GEMINI_MODELS = {
 # Default model list — newest first, with a fast fallback.
 # As of Aug 2026: 2.5 models return 404, 2.0 models shut down.
 # Use 3.x stable models (confirmed working on Gemini REST API).
-_DEFAULT_GEMINI_MODELS = "gemini-2.5-flash-lite,gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.1-flash-lite"
+_DEFAULT_GEMINI_MODELS = "gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.1-flash-lite"
 
 
 def _gemini_extract(input_text: str) -> Dict[str, Any] | None:
