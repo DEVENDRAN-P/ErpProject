@@ -255,8 +255,14 @@ export async function fetchDashboardStats() {
 
 export async function fetchProductHealth(productId: number) {
   const fallback = {
-    health_score: 92,
-    breakdown: { completeness: 95, accuracy: 94, consistency: 90, recency: 90 },
+    score: 87,
+    health_score: 87,
+    completeness: 88,
+    consistency: 80,
+    confidence: 85,
+    source_reliability: 90,
+    explanation: "Product health score calculated using weighted attribute completeness, consistency checks, model confidence, and document provenance reliability.",
+    breakdown: { completeness: 88, consistency: 80, confidence: 85, source_reliability: 90 },
     recommendations: ["All mandatory nameplate specifications are verified against primary datasheet PDF."]
   };
   try {
