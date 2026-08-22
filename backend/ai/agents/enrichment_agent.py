@@ -304,7 +304,9 @@ def extract_attribute_with_context(
 
 
 def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
+    print(f"[ENRICH DIAG] Starting extraction, text_length={len(input_text)}")
     api_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY", "")
+    print(f"[ENRICH DIAG] OpenAI key present={bool(api_key and api_key.strip())}")
 
     if api_key and openai:
         try:
@@ -366,11 +368,15 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
 
     # Gemini LLM Extraction
     gemini_key = getattr(settings, "gemini_api_key", None) or os.getenv("GEMINI_API_KEY", "")
-    if gemini_key:
+    gemini_key_present = bool(gemini_key and gemini_key.strip())
+    print(f"[GEMINI DIAG] key_present={gemini_key_present} key_length={len(gemini_key) if gemini_key else 0}")
+    if gemini_key_present:
         try:
             import google.generativeai as genai
+            print("[GEMINI DIAG] SDK imported successfully")
             genai.configure(api_key=gemini_key)
             model = genai.GenerativeModel("gemini-1.5-flash")
+            print("[GEMINI DIAG] Model initialized, sending request...")
             prompt = (
                 "You are an industrial product data extraction engine. Analyze the following document text and extract ALL product specification attributes you can find.\n\n"
                 "The document may be about ANY type of industrial product — motors, abrasives, valves, pumps, electrical components, etc.\n"
@@ -392,10 +398,12 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
             )
             resp = model.generate_content(prompt)
             raw = resp.text
+            print(f"[GEMINI DIAG] Response received, length={len(raw) if raw else 0}")
             if "{" in raw:
                 json_str = raw[raw.find("{"):raw.rfind("}")+1]
                 parsed = json.loads(json_str)
                 if "attributes" in parsed and isinstance(parsed["attributes"], list):
+                    print(f"[GEMINI DIAG] SUCCESS - extracted {len(parsed['attributes'])} attributes via Gemini")
                     return {
                         "type": "enrichment",
                         "llm_used": "gemini",
@@ -405,10 +413,19 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
                         "industries": parsed.get("industries", []),
                         "tags": parsed.get("tags", []),
                     }
+                else:
+                    print(f"[GEMINI DIAG] Response parsed but no 'attributes' array found")
+            else:
+                print(f"[GEMINI DIAG] Response has no JSON object (first 200 chars: {raw[:200] if raw else 'None'})")
+        except ImportError as e:
+            print(f"[GEMINI DIAG] SDK import failed: {e}")
         except Exception as e:
-            print(f"[GEMINI EXTRACTION ERROR] {e}")
+            print(f"[GEMINI DIAG] Gemini API call failed: {type(e).__name__}: {e}")
+    else:
+        print(f"[GEMINI DIAG] No Gemini key configured - settings.gemini_api_key={bool(getattr(settings, 'gemini_api_key', ''))} os.getenv={bool(os.getenv('GEMINI_API_KEY'))}")
 
     # Rule-based extraction fallback
+    print("[ENRICH DIAG] Using rule-based extraction fallback (no LLM succeeded)")
     text_lower = input_text.lower()
 
     # Extract all candidate values with their positions for context-aware processing
