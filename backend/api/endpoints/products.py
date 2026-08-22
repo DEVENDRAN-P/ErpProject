@@ -1,6 +1,8 @@
 import io
 import csv
 import json
+import ipaddress
+import socket
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse
 
@@ -174,6 +176,27 @@ def ingest_url_endpoint(
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         raise HTTPException(status_code=422, detail="Invalid URL. Must start with http:// or https:// and include a host.")
+
+    # ── SSRF Protection: block private/internal IPs ──
+    hostname = parsed.hostname or ""
+    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
+        raise HTTPException(status_code=422, detail="Access to localhost/internal URLs is not allowed.")
+    try:
+        resolved = socket.getaddrinfo(hostname, None)
+        for info in resolved:
+            addr = info[4][0]
+            try:
+                ip = ipaddress.ip_address(addr)
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                    raise HTTPException(status_code=422, detail="Access to private/internal network addresses is not allowed.")
+            except ValueError:
+                pass
+    except socket.gaierror:
+        raise HTTPException(status_code=422, detail="Could not resolve hostname.")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
 
     result = parse_url(url)
     if result.get("status") == "error" or not result.get("text", "").strip():
