@@ -330,7 +330,7 @@ function CatalogPilotTab({ product }: { product: ProductRead }) {
 
 // ─── Export ────────────────────────────────────────────────────────
 function ExportTab({ product }: { product: ProductRead }) {
-  const [exporting, setExporting] = React.useState<string | null>(null);
+  const [exporting, setExporting] = useState<string | null>(null);
 
   const handleExport = async (format: "json" | "csv") => {
     try {
@@ -492,10 +492,12 @@ export default function EnterpriseDashboard({ initialProductId, initialTab }: { 
     try {
       const data = await fetchProducts(q);
       setProducts(data);
-      const targetId = preselectId ?? selected?.id;
-      setSelected(data.find(p => p.id === targetId) || data[0] || null);
+      setSelected(prev => {
+        const targetId = preselectId ?? prev?.id;
+        return data.find(p => p.id === targetId) || data[0] || null;
+      });
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
-  }, [selected]);
+  }, []);
 
   const loadStats = useCallback(async () => {
     setStatsLoading(true);
@@ -504,7 +506,7 @@ export default function EnterpriseDashboard({ initialProductId, initialTab }: { 
   }, []);
 
   const onRefresh = () => { loadProducts(searchQ); loadStats(); };
-  useEffect(() => { loadProducts("", initialProductId); loadStats(); }, [initialProductId]);
+  useEffect(() => { loadProducts("", initialProductId); loadStats(); }, [initialProductId, loadProducts, loadStats]);
 
   // React to external tab changes (from sidebar navigation)
   useEffect(() => {
