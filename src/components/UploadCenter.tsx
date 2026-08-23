@@ -458,9 +458,8 @@ export default function UploadCenter() {
                       const uid = user?.uid;
                       if (!uid) { alert("⚠️ You must be logged in to save products."); return; }
                       try {
-                        // 1. Persist to backend (SQLite)
-                        await ingestProduct(product);
-                        // 2. Persist to Firestore
+                        // Product already saved to SQLite by the workflow pipeline.
+                        // Only persist to Firestore for user-scoped fallback storage.
                         const attrs = (product.attributes || []).map((a: any, i: number) => ({ ...a, id: a.id ?? i + 1 }));
                         const reviews = (product.review_items || []).map((r: any, i: number) => ({ ...r, id: r.id ?? i + 1 }));
                         await saveUserProduct(uid, {
@@ -478,7 +477,7 @@ export default function UploadCenter() {
                           conflicts: (product.conflicts || []) as any,
                           versions: (product.versions || []) as any,
                         });
-                        alert("✓ Product stored in database and persisted to Firebase Firestore!");
+                        alert("✓ Product persisted to Firebase Firestore!");
                       } catch (e: any) {
                         console.error("Store & Save failed:", e);
                         alert(`❌ Failed to save product: ${e?.message || "Unknown error"}.\nPlease try again.`);
@@ -497,7 +496,7 @@ export default function UploadCenter() {
 
                   {/* Button 2: Move to Dashboard */}
                   <button
-                    onClick={() => router.push(product?.id ? `/?product=${product.id}` : "/dashboard")}
+                    onClick={() => router.push("/")}
                     className="inline-flex items-center gap-2 px-4.5 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
                     style={{ background: "#0F766E" }}
                   >
