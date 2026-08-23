@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { processWorkflow, processCsvWorkflow, ingestUrl, ingestProduct, ProductCreateInput } from "@/lib/api";
+import { saveUserProduct } from "@/lib/firestoreService";
 import {
   FileText, Globe, FileSpreadsheet, Camera, Keyboard, Upload, CheckCircle,
   Cloud, Circle, Loader2, ArrowRight, X
@@ -129,6 +130,7 @@ export default function UploadCenter() {
     if (!manualName.trim()) { setManualMessage("Product name is required."); return; }
     setLoading(true); setError(""); setManualMessage("");
     try {
+      const uid = user?.uid;
       const attributes = MOTOR_ATTRIBUTES.map(a => {
         const raw = (manualValues[a.key] || "").trim();
         return { key: a.key, label: a.label, value: raw || undefined, unit: a.unit || undefined, confidence: raw ? 1.0 : 0.0, source: "Manual Entry", evidence: raw ? `Entered manually by user` : "Not provided by user.", status: raw ? "verified" : "not_found" };
@@ -138,10 +140,30 @@ export default function UploadCenter() {
         attributes, review_items: attributes.filter(a => !a.value).map(a => ({ title: `Missing: ${a.label} (${a.unit})`, item_type: "missing", description: `Required specification '${a.label}' not entered.`, action: "Add value", status: "pending" })),
       };
       const created = await ingestProduct(product);
-      setManualMessage("✓ Product created successfully. Review results below or click to open dashboard.");
+      // Also persist to Firestore
+      if (uid && created) {
+        const attrsWithIds = attributes.map((a, i) => ({ ...a, id: (created as any).attributes?.[i]?.id ?? i + 1 }));
+        const reviewWithIds = (product.review_items || []).map((r: any, i: number) => ({ ...r, id: r.id ?? i + 1 }));
+        await saveUserProduct(uid, {
+          id: created.id,
+          name: created.name || product.name,
+          model_number: created.model_number || product.model_number || "",
+          category: created.category || product.category || "General",
+          description: created.description || product.description || "",
+          health_score: created.health_score ?? 0,
+          created_by: uid,
+          created_at: created.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          attributes: attrsWithIds as any,
+          review_items: reviewWithIds as any,
+          conflicts: (created.conflicts || []) as any,
+          versions: (created.versions || []) as any,
+        });
+      }
+      setManualMessage("✓ Product created and persisted to Firebase Firestore!");
       setResult({ mode: "manual", data: { product: created, validated_attributes: attributes } });
     } catch (e: any) { setError(e.message || "Unable to create product."); } finally { setLoading(false); }
-  }, [manualName, manualModel, manualCategory, manualValues]);
+  }, [manualName, manualModel, manualCategory, manualValues, user]);
 
   return (
     <div className="space-y-6 page-enter">
@@ -334,6 +356,47 @@ export default function UploadCenter() {
             </div>
           )}
 
+          {/* CSV: Persist to Firestore button */}
+          {result.mode === "csv" && result.data?.products?.length > 0 && (
+            <button
+              onClick={async () => {
+                const uid = user?.uid;
+                if (!uid) { alert("⚠️ You must be logged in to save products."); return; }
+                try {
+                  const products = result.data.products;
+                  let saved = 0;
+                  for (const p of products) {
+                    await saveUserProduct(uid, {
+                      id: p.id,
+                      name: p.name || "Unnamed Product",
+                      model_number: p.model_number || p.mpn || "",
+                      category: p.category || "General",
+                      description: p.description || "",
+                      health_score: p.health_score ?? 0,
+                      created_by: uid,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                      attributes: (p.attributes || []).map((a: any, i: number) => ({ ...a, id: a.id ?? i + 1 })) as any,
+                      review_items: (p.review_items || []).map((r: any, i: number) => ({ ...r, id: r.id ?? i + 1 })) as any,
+                      conflicts: (p.conflicts || []) as any,
+                      versions: (p.versions || []) as any,
+                    });
+                    saved++;
+                  }
+                  alert(`✓ ${saved}/${products.length} CSV products persisted to Firebase Firestore!`);
+                } catch (e: any) {
+                  console.error("CSV Firestore persist failed:", e);
+                  alert(`❌ Failed to persist CSV products: ${e?.message || "Unknown error"}.`);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
+              style={{ background: "var(--accent-primary)" }}
+            >
+              <Cloud size={14} />
+              Persist {result.data.products.length} Products to Firebase Firestore
+            </button>
+          )}
+
           {result.mode === "url" && result.data?.result?.text && (
             <div>
               <div className="text-xs mb-1 font-semibold" style={{ color: "var(--text-muted)" }}>Extracted Web Catalog Content Preview</div>
@@ -391,13 +454,34 @@ export default function UploadCenter() {
                   {/* Button 1: Store & Save */}
                   <button
                     onClick={async () => {
+                      if (!product) return;
+                      const uid = user?.uid;
+                      if (!uid) { alert("⚠️ You must be logged in to save products."); return; }
                       try {
-                        if (product) {
-                          await ingestProduct(product);
-                        }
-                        alert("✓ Product data successfully stored and persisted to Database!");
+                        // 1. Persist to backend (SQLite)
+                        await ingestProduct(product);
+                        // 2. Persist to Firestore
+                        const attrs = (product.attributes || []).map((a: any, i: number) => ({ ...a, id: a.id ?? i + 1 }));
+                        const reviews = (product.review_items || []).map((r: any, i: number) => ({ ...r, id: r.id ?? i + 1 }));
+                        await saveUserProduct(uid, {
+                          id: product.id,
+                          name: product.name,
+                          model_number: product.model_number || "",
+                          category: product.category || "General",
+                          description: product.description || "",
+                          health_score: product.health_score ?? 0,
+                          created_by: uid,
+                          created_at: product.created_at || new Date().toISOString(),
+                          updated_at: new Date().toISOString(),
+                          attributes: attrs as any,
+                          review_items: reviews as any,
+                          conflicts: (product.conflicts || []) as any,
+                          versions: (product.versions || []) as any,
+                        });
+                        alert("✓ Product stored in database and persisted to Firebase Firestore!");
                       } catch (e: any) {
-                        alert("✓ Product stored in store state.");
+                        console.error("Store & Save failed:", e);
+                        alert(`❌ Failed to save product: ${e?.message || "Unknown error"}.\nPlease try again.`);
                       }
                     }}
                     className="inline-flex items-center gap-2 px-4.5 py-2.5 text-xs font-bold rounded-xl text-white shadow-sm transition hover:opacity-95"
