@@ -2,25 +2,20 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// Vercel serverless timeout is 60s (Pro) or 10s (Hobby).
-// Render free tier may take 30-60s for LLM processing.
-// Set a generous timeout but still leave room for Vercel's own limit.
-const BACKEND_TIMEOUT_MS = 55_000; // 55 seconds
+const BACKEND_TIMEOUT_MS = 120_000; // 2 minutes for large CSVs
 
 export async function POST(request: Request) {
   try {
     const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
 
-    // Proxy request to the Render FastAPI backend
     if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
       const formData = await request.formData();
 
-      // Use AbortController for timeout
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), BACKEND_TIMEOUT_MS);
 
       try {
-        const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/workflow/process`, {
+        const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/workflow/process-csv`, {
           method: "POST",
           body: formData,
           headers: {
@@ -36,7 +31,7 @@ export async function POST(request: Request) {
         clearTimeout(timeout);
         if (fetchErr.name === "AbortError") {
           return NextResponse.json(
-            { error: "Document analysis timed out. The backend is processing a large document — try again with a smaller file, or wait a moment and retry." },
+            { error: "CSV processing timed out. The file may be too large — try splitting it into smaller batches." },
             { status: 504 }
           );
         }
@@ -44,14 +39,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Backend not configured
     return NextResponse.json(
-      { error: "Backend not configured. Set BACKEND_URL to your Render deployment URL (e.g. https://your-app.onrender.com) in Vercel environment variables." },
+      { error: "Backend not configured. Set BACKEND_URL to your Render deployment URL in Vercel environment variables." },
       { status: 503 }
     );
   } catch (err: any) {
     return NextResponse.json(
-      { error: err.message || "Document analysis failed. The backend may be temporarily unavailable." },
+      { error: err.message || "CSV processing failed. The backend may be temporarily unavailable." },
       { status: 502 }
     );
   }

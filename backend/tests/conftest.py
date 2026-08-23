@@ -16,6 +16,7 @@ _TMP_DB_FD, _TMP_DB_PATH = tempfile.mkstemp(suffix=".db", prefix="nexgen_test_")
 os.close(_TMP_DB_FD)
 os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB_PATH.replace(os.sep, '/')}"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-not-for-production"
+os.environ["TESTING"] = "1"
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 

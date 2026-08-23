@@ -6,7 +6,7 @@ Handles batch CSV/JSON export with full product data lineage.
 import csv
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 
@@ -22,7 +22,7 @@ def export_products_csv(products: List[Dict[str, Any]]) -> str:
         "Source", "Page", "Status", "Evidence", "Exported At",
     ])
 
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
 
     for product in products:
         pid = product.get("id", "")
@@ -56,7 +56,7 @@ def export_products_csv(products: List[Dict[str, Any]]) -> str:
 
 def export_products_json(products: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Export multiple products as a structured JSON object with metadata."""
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
 
     export_data = {
         "metadata": {

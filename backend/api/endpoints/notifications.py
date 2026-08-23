@@ -1,7 +1,7 @@
 """Team 4: Real-time Notifications & WebSocket API endpoints."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
@@ -286,6 +286,6 @@ async def trigger_notification(
             "title": title,
             "message": message,
             "product_id": product_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     })

@@ -185,8 +185,8 @@ function ReportsContent() {
                 <Shield size={20} style={{ color: "var(--accent-primary)" }} />
                 <div>
                   <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Overall Compliance</h3>
-                  <div className="text-2xl font-bold" style={{ color: (compliance.overall_compliance_rate ?? 90) >= 80 ? "var(--color-success)" : "var(--color-warning)" }}>
-                    {compliance.overall_compliance_rate ?? 90}%
+                  <div className="text-2xl font-bold" style={{ color: (compliance.overall_compliance_rate ?? 0) >= 80 ? "var(--color-success)" : "var(--color-warning)" }}>
+                    {compliance.overall_compliance_rate ?? 0}%
                   </div>
                 </div>
               </div>

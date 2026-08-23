@@ -132,11 +132,11 @@ function HealthTab({ product }: { product: ProductRead }) {
 
   if (loading) return <div className="space-y-4">{[...Array(4)].map((_, i) => <div key={i} className="skeleton h-8 rounded-lg" />)}</div>;
 
-  const score = Math.round(Number(health?.score ?? health?.health_score ?? product.health_score ?? 87));
-  const completeness = Math.round(Number(health?.completeness ?? health?.breakdown?.completeness ?? 88));
-  const consistency = Math.round(Number(health?.consistency ?? health?.breakdown?.consistency ?? 80));
-  const confidence = Math.round(Number(health?.confidence ?? health?.breakdown?.confidence ?? health?.breakdown?.accuracy ?? 85));
-  const source_reliability = Math.round(Number(health?.source_reliability ?? health?.breakdown?.source_reliability ?? health?.breakdown?.recency ?? 90));
+  const score = Math.round(Number(health?.score ?? health?.health_score ?? product.health_score));
+  const completeness = Math.round(Number(health?.completeness ?? health?.breakdown?.completeness));
+  const consistency = Math.round(Number(health?.consistency ?? health?.breakdown?.consistency));
+  const confidence = Math.round(Number(health?.confidence ?? health?.breakdown?.confidence ?? health?.breakdown?.accuracy));
+  const source_reliability = Math.round(Number(health?.source_reliability ?? health?.breakdown?.source_reliability ?? health?.breakdown?.recency));
 
   const breakdown = [
     { label: "Completeness", value: completeness, weight: "40%", color: "var(--accent-primary)" },

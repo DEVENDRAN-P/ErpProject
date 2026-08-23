@@ -107,21 +107,6 @@ async def get_current_user(
         raise
     except Exception as e:
         print(f"[AUTH ERROR] Token verification failed: {type(e).__name__}: {e}")
-        if os.environ.get("ENVIRONMENT") != "production":
-            try:
-                import jwt
-                decoded = jwt.decode(token, options={"verify_signature": False})
-                uid = decoded.get("user_id") or decoded.get("sub") or decoded.get("uid")
-                if uid:
-                    print(f"[DEV AUTH FALLBACK] Decoded unverified token for user: {uid}")
-                    return AuthenticatedUser(
-                        uid=uid,
-                        email=decoded.get("email", ""),
-                        display_name=decoded.get("name") or decoded.get("display_name"),
-                    )
-            except Exception as dev_err:
-                print(f"[DEV AUTH FALLBACK ERROR] {dev_err}")
-
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid or expired authentication token ({type(e).__name__}: {e}).",

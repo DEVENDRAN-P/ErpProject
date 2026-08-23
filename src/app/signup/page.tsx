@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Logo from "@/components/ui/Logo";
+import { auth } from "@/lib/firebase";
+
+const firebaseConfigured = !!auth;
 
 export default function SignupPage() {
   const { register, registerWithGoogle } = useAuth();
@@ -92,6 +95,11 @@ export default function SignupPage() {
                 className="w-full rounded-lg border px-4 py-2.5 text-sm"
                 style={{ borderColor: "var(--border-default)", color: "var(--text-primary)" }} />
             </div>
+            {!firebaseConfigured && (
+              <div className="rounded-lg px-4 py-3 text-sm" style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #FDE68A" }}>
+                <strong>Firebase is not configured.</strong> Set NEXT_PUBLIC_FIREBASE_* environment variables on Vercel to enable authentication.
+              </div>
+            )}
             {error && (
               <div className="rounded-lg px-4 py-3 text-sm" style={{ background: "var(--color-error-light)", color: "var(--color-error)", border: `1px solid var(--color-error-border)` }}>
                 {error}

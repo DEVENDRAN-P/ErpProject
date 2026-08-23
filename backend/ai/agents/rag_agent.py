@@ -121,19 +121,16 @@ def query_rag(question: str, document_text: str | None = None, sources: List[Dic
     elif document_text:
         docs.append({"text": document_text, "source": "Ingested Document", "page": 1})
     else:
-        # Default fallback context from industrial motor spec
-        docs.append({
-            "text": (
-                "Siemens 1LE1001 15kW 3-Phase Industrial Motor. "
-                "Rated Voltage: 415 V Delta / 690 V Star. Frequency: 50 Hz. "
-                "Full Load Current: 28.5 A at 415V. Rated speed: 1475 rpm. "
-                "Efficiency Class: IE3 (92.6% efficiency compliant with IEC 60034-30-1). "
-                "IEC Frame Size: 160M cast iron structure. IP55 ingress protection. "
-                "Thermal Insulation: Class F (155°C max rise limit)."
-            ),
-            "source": "Siemens_1LE1001_Datasheet.pdf",
-            "page": 1,
-        })
+        # No user document or context provided — return insufficient evidence
+        # rather than using fabricated demo data.
+        return {
+            "question": question,
+            "answer": "Insufficient evidence. No document context was provided for RAG verification.",
+            "has_evidence": False,
+            "confidence": 0.0,
+            "sources": [],
+            "evidence_snippets": [],
+        }
 
     index.add_documents(docs)
     results = index.query(question, top_k=3)

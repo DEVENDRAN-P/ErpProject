@@ -86,12 +86,12 @@ export async function getUserProducts(uid: string): Promise<ProductRead[]> {
         return snap.docs.map((docSnap) => {
           const data = docSnap.data();
           return {
-            id: Number(docSnap.id) || Math.floor(Math.random() * 10000),
+            id: (() => { const n = Number(docSnap.id); if (Number.isFinite(n) && n > 0) return n; let h = 5381; for (let i = 0; i < docSnap.id.length; i++) h = ((h << 5) + h + docSnap.id.charCodeAt(i)) | 0; return Math.abs(h) || 1; })(),
             name: data.name || "Unnamed Product",
             model_number: data.model_number || data.model || "",
             category: data.category || "General",
             description: data.description || "",
-            health_score: data.health_score ?? data.healthScore ?? 85,
+            health_score: data.health_score ?? data.healthScore ?? 0,
             created_by: uid,
             created_at: data.created_at || new Date().toISOString(),
             updated_at: data.updated_at || new Date().toISOString(),
@@ -193,14 +193,18 @@ export async function uploadUserDocument(
 
       return { downloadUrl, storagePath: path };
     } catch (err) {
-      console.warn("Firebase Storage upload failed, returning local reference:", err);
+      console.error("Firebase Storage upload failed:", err);
+      throw new Error(
+        "File upload to Firebase Storage failed. Please check your network connection and try again. " +
+        "If the problem persists, contact your administrator."
+      );
     }
   }
 
-  return {
-    downloadUrl: URL.createObjectURL(file),
-    storagePath: path,
-  };
+  // Firebase Storage is not configured
+  throw new Error(
+    "Firebase Storage is not configured. Set NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable."
+  );
 }
 
 // ---------------------------------------------------------------------------

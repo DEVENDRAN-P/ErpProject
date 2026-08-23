@@ -62,9 +62,20 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
 
   // Resolve the WS URL once per userId change
   const wsUrl = (() => {
+    // 1. Explicit override
     if (opts.wsUrl) return opts.wsUrl;
+    // 2. Environment variable (set on Vercel for production)
+    if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+    // 3. Derive from backend URL or current host
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    // In dev Next.js proxies /api → FastAPI, so go direct to backend
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL;
+    if (backendUrl) {
+      try {
+        const u = new URL(backendUrl);
+        return `${u.protocol === "https:" ? "wss:" : "ws:"}//${u.host}/api/ws/notifications`;
+      } catch {}
+    }
+    // 4. Same-host fallback (works in local dev)
     const host = window.location.hostname;
     const port = process.env.NEXT_PUBLIC_WS_PORT || "8000";
     return `${proto}//${host}:${port}/api/ws/notifications`;
@@ -96,11 +107,8 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
 
   const connect = useCallback(() => {
     if (!userId) return;
-    const isRemoteHost = typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
-    if (isRemoteHost && !process.env.NEXT_PUBLIC_WS_URL) {
-      // Skip WebSocket connection on remote Vercel preview when WS server is not configured
-      return;
-    }
+    // On remote hosts without a configured WS URL, derive the URL from the backend.
+    // This allows WebSocket to work when the backend supports it.
     cleanup();
 
     const url = `${wsUrl}?user_id=${encodeURIComponent(userId)}`;
@@ -132,8 +140,7 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       wsRef.current = null;
 
-      const isRemoteHost = typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
-      if (autoReconnect && userId && (!isRemoteHost || reconnectAttempt.current < 2)) {
+      if (autoReconnect && userId && reconnectAttempt.current < 5) {
         const delay = Math.min(2000 * 2 ** reconnectAttempt.current, 30_000);
         reconnectAttempt.current += 1;
         reconnectTimerRef.current = setTimeout(connect, delay);

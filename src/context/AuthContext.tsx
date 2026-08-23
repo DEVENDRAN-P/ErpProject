@@ -98,29 +98,7 @@ async function saveUserProfile(user: User, extra?: Record<string, any>) {
   }
 }
 
-function createDemoUser(email: string, displayName?: string): User {
-  const name = displayName || email.split("@")[0] || "NexGen User";
-  const hash = Math.abs(email.split("").reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0));
-  return {
-    uid: "demo-user-" + hash,
-    email: email.toLowerCase(),
-    displayName: name,
-    emailVerified: true,
-    isAnonymous: false,
-    metadata: {},
-    providerData: [],
-    refreshToken: "demo-token",
-    tenantId: null,
-    delete: async () => {},
-    getIdToken: async () => "demo-token-12345",
-    getIdTokenResult: async () => ({ token: "demo-token-12345" } as any),
-    reload: async () => {},
-    toJSON: () => ({}),
-    phoneNumber: null,
-    photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=7C3AED&color=fff`,
-    providerId: "demo",
-  };
-}
+/** No-op: demo users are not allowed. Firebase Authentication is required. */
 
 import { ensureUserDocument } from "@/lib/firestoreService";
 
@@ -131,23 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Subscribe to Firebase Auth state on mount (or restore local demo session)
   useEffect(() => {
     if (!auth) {
-      const saved = typeof window !== "undefined" ? localStorage.getItem("nexgen_demo_user") : null;
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          const demoUser = createDemoUser(parsed.email, parsed.displayName);
-          setUser(demoUser);
-          ensureUserDocument({
-            uid: demoUser.uid,
-            email: demoUser.email || "",
-            displayName: demoUser.displayName,
-            photoURL: demoUser.photoURL,
-            providerId: "demo",
-          }).catch(() => {});
-        } catch {
-          localStorage.removeItem("nexgen_demo_user");
-        }
-      }
+      // Firebase is not configured — cannot authenticate.
+      console.error("Firebase Auth is not configured. Set NEXT_PUBLIC_FIREBASE_* environment variables.");
       setLoading(false);
       return;
     }
@@ -191,10 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     if (!auth) {
-      const demo = createDemoUser(email);
-      localStorage.setItem("nexgen_demo_user", JSON.stringify({ email, displayName: demo.displayName }));
-      setUser(demo);
-      return;
+      throw new Error("Firebase Auth is not configured. Please contact your administrator.");
     }
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -205,10 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(async () => {
     if (!auth || !googleProvider) {
-      const demo = createDemoUser("google.user@nexgen.ai", "Google User");
-      localStorage.setItem("nexgen_demo_user", JSON.stringify({ email: "google.user@nexgen.ai", displayName: "Google User" }));
-      setUser(demo);
-      return;
+      throw new Error("Firebase Auth is not configured. Please contact your administrator.");
     }
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -231,10 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(
     async (email: string, password: string, displayName: string) => {
       if (!auth) {
-        const demo = createDemoUser(email, displayName);
-        localStorage.setItem("nexgen_demo_user", JSON.stringify({ email, displayName }));
-        setUser(demo);
-        return;
+        throw new Error("Firebase Auth is not configured. Please contact your administrator.");
       }
       try {
         // 1. Create Firebase Auth account
@@ -256,10 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const registerWithGoogle = useCallback(async () => {
     if (!auth || !googleProvider) {
-      const demo = createDemoUser("google.user@nexgen.ai", "Google User");
-      localStorage.setItem("nexgen_demo_user", JSON.stringify({ email: "google.user@nexgen.ai", displayName: "Google User" }));
-      setUser(demo);
-      return;
+      throw new Error("Firebase Auth is not configured. Please contact your administrator.");
     }
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -278,7 +229,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    localStorage.removeItem("nexgen_demo_user");
     if (!auth) {
       setUser(null);
       return;
@@ -292,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     if (!auth) {
-      return; // Demo reset succeeded
+      throw new Error("Firebase Auth is not configured. Please contact your administrator.");
     }
     try {
       await sendPasswordResetEmail(auth, email);

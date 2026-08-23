@@ -587,6 +587,71 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
     print(f"[ENRICH DIAG] Using rule-based extraction fallback (no LLM succeeded)")
     text_lower = input_text.lower()
 
+    # ── Product-type detection ─────────────────────────────────────────
+    # Detect whether the document is about a motor or a different product type.
+    # This prevents forcing motor attributes onto abrasive discs, pumps, etc.
+    _motor_keywords = ["motor", "induction", "stator", "rotor", "torque", "rpm", "3-phase", "three-phase", "ie3", "ie2", "ie4"]
+    _abrasive_keywords = ["abrasive", "grit", "disc", "grinding", "sanding", "flap", "backing", "bond type", "max rpm"]
+    _pump_keywords = ["pump", "flow rate", "head", "impeller", "discharge", "suction", "cavitation"]
+    _valve_keywords = ["valve", "gate valve", "ball valve", "butterfly", "pressure rating", "seat", "bonnet"]
+    _general_keywords = ["brand", "manufacturer", "model", "dimensions", "material", "weight", "certificate", "standard", "specification"]
+
+    detected_type = "unknown"
+    if any(kw in text_lower for kw in _motor_keywords):
+        detected_type = "motor"
+    elif any(kw in text_lower for kw in _abrasive_keywords):
+        detected_type = "abrasive"
+    elif any(kw in text_lower for kw in _pump_keywords):
+        detected_type = "pump"
+    elif any(kw in text_lower for kw in _valve_keywords):
+        detected_type = "valve"
+    elif any(kw in text_lower for kw in _general_keywords):
+        detected_type = "general"
+
+    print(f"[ENRICH DIAG] Detected product type: {detected_type}")
+
+    # ── General attributes (all product types) ──────────────────────────
+    general_attrs = []
+
+    # Brand / Manufacturer
+    brand_match = re.search(r"(?:brand|manufacturer|made by)[:\s]+([A-Za-z][A-Za-z0-9 \-]+)", text_lower)
+    if brand_match:
+        general_attrs.append({
+            "key": "brand", "label": "Brand / Manufacturer",
+            "raw_value": brand_match.group(1).strip(),
+            "normalized_value": brand_match.group(1).strip(),
+            "value": brand_match.group(1).strip(),
+            "unit": "", "confidence": 0.9, "source": "Document Extraction",
+            "page": 1, "evidence": brand_match.group(0), "evidence_quote": brand_match.group(0),
+            "status": "verified", "reason": "Brand/manufacturer identified in document",
+        })
+
+    # Model number (common pattern)
+    model_match = re.search(r"(?:model|part no|catalog no)[:\s#]+([A-Za-z0-9][A-Za-z0-9\-\/]+)", text_lower)
+    if model_match:
+        general_attrs.append({
+            "key": "model_number", "label": "Model Number",
+            "raw_value": model_match.group(1).strip(),
+            "normalized_value": model_match.group(1).strip(),
+            "value": model_match.group(1).strip(),
+            "unit": "", "confidence": 0.9, "source": "Document Extraction",
+            "page": 1, "evidence": model_match.group(0), "evidence_quote": model_match.group(0),
+            "status": "verified", "reason": "Model number identified in document",
+        })
+
+    # Material
+    mat_match = re.search(r"(?:material|construction)[:\s]+([A-Za-z][A-Za-z0-9 \-]+)", text_lower)
+    if mat_match:
+        general_attrs.append({
+            "key": "material", "label": "Material",
+            "raw_value": mat_match.group(1).strip(),
+            "normalized_value": mat_match.group(1).strip(),
+            "value": mat_match.group(1).strip(),
+            "unit": "", "confidence": 0.85, "source": "Document Extraction",
+            "page": 1, "evidence": mat_match.group(0), "evidence_quote": mat_match.group(0),
+            "status": "verified", "reason": "Material identified in document",
+        })
+
     # Extract all candidate values with their positions for context-aware processing
     # Rated Power: patterns like "15 kW", "200 HP", "Rated Power: 15kW"
     # Require digits before optional decimal — reject "55 W" from section numbers
@@ -737,7 +802,8 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
     }
 
     # Build attributes list with post-processing validation
-    attributes = [power_result, voltage_result, current_result, efficiency_result, speed_result, temp_result, frame_result, weight_result]
+    # Include general attributes detected for any product type, plus motor-specific attrs
+    attributes = general_attrs + [power_result, voltage_result, current_result, efficiency_result, speed_result, temp_result, frame_result, weight_result]
 
     # Post-process: compute plausibility and cross-attribute validation
     # Extract parsed numeric values for cross-attribute checks
@@ -784,7 +850,7 @@ def enrich_product_metadata(input_text: str) -> Dict[str, Any]:
         "llm_used": None,
         "product_name": input_text[:100],
         "attributes": attributes,
-        "note": "Rule-based extraction used (no LLM available). Results are limited to motor-specific attributes. Configure GEMINI_API_KEY or OPENAI_API_KEY on the backend for full product analysis.",
+        "note": "WARNING: Rule-based extraction used (no LLM available). Results are limited to motor-specific attributes only. For non-motor products (abrasive discs, pumps, valves, etc.), configure GEMINI_API_KEY or OPENAI_API_KEY on the backend for proper product-specific analysis.",
         "applications": [],
         "industries": [],
         "tags": [],

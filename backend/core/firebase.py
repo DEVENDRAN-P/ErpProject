@@ -62,9 +62,8 @@ def _get_firebase_creds():
     except Exception:
         pass
 
-    # No credentials found — return None so the app can fall back to dev auth
-    print("[WARN] Firebase Admin credentials not found. Running in dev mode — "
-          "API token verification will use JWT decode fallback.")
+    # No credentials found — return None. The backend will reject unauthenticated requests.
+    print("[WARN] Firebase Admin credentials not found. API token verification will be rejected with 503.")
     return None
 
 

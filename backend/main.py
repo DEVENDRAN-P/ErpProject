@@ -19,6 +19,26 @@ async def lifespan(app: FastAPI):
     # Ensure tables exist and validation reference data is loaded on a clean install.
     init_db()
     load_reference_data()
+
+    # ── Startup validation: warn about missing critical env vars ────────
+    missing = []
+    if not settings.gemini_api_key and not settings.openai_api_key:
+        missing.append("GEMINI_API_KEY or OPENAI_API_KEY (AI extraction will use rule-based fallback only)")
+    if not os.environ.get("FIREBASE_CLIENT_EMAIL") and not os.environ.get("FIREBASE_SERVICE_ACCOUNT"):
+        missing.append("FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY (backend cannot verify Firebase tokens)")
+    if settings.environment != "production":
+        print(f"[STARTUP WARNING] ENVIRONMENT is '{settings.environment}' — set to 'production' on Render")
+    if missing:
+        print("[STARTUP WARNING] Missing environment variables:")
+        for m in missing:
+            print(f"  - {m}")
+    else:
+        print("[STARTUP] All critical environment variables configured.")
+    print(f"[STARTUP] Environment: {settings.environment}")
+    print(f"[STARTUP] Gemini configured: {bool(settings.gemini_api_key)}")
+    print(f"[STARTUP] OpenAI configured: {bool(settings.openai_api_key)}")
+    print(f"[STARTUP] Firebase Admin configured: {bool(os.environ.get('FIREBASE_CLIENT_EMAIL') or os.environ.get('FIREBASE_SERVICE_ACCOUNT'))}")
+
     yield
 
 
@@ -38,7 +58,7 @@ allowed_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://nexgenplus-erp\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
@@ -55,7 +75,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     # Only add HSTS in production
-    if os.environ.get("ENVIRONMENT") == "production":
+    if settings.environment == "production":
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
     return response
 

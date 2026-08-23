@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { processWorkflow, ingestUrl, ingestProduct, ProductCreateInput } from "@/lib/api";
+import { processWorkflow, processCsvWorkflow, ingestUrl, ingestProduct, ProductCreateInput } from "@/lib/api";
 import {
   FileText, Globe, FileSpreadsheet, Camera, Keyboard, Upload, CheckCircle,
   Cloud, Circle, Loader2, ArrowRight, X
@@ -80,17 +80,23 @@ export default function UploadCenter() {
   const handleFileUpload = useCallback(async () => {
     if (!file) return;
     setLoading(true); setError(""); setResult(null);
+    
+    const isCSV = file.name.toLowerCase().endsWith(".csv");
+    
     setSteps([
-      { label: "Extracting document content", status: "active" },
-      { label: "Analyzing specifications", status: "pending" },
+      { label: isCSV ? "Parsing CSV rows" : "Extracting document content", status: "active" },
+      { label: isCSV ? "Creating individual products" : "Analyzing specifications", status: "pending" },
       { label: "Validating data quality", status: "pending" },
-      { label: "Creating ProductTwin", status: "pending" },
+      { label: isCSV ? "Persisting products" : "Creating ProductTwin", status: "pending" },
     ]);
     try {
       const form = new FormData();
       form.append("file", file);
       setSteps(s => s.map((st, i) => i === 0 ? { ...st, status: "done" } : i === 1 ? { ...st, status: "active" } : st));
-      const res = await processWorkflow(form);
+      
+      // Route CSV files to the CSV-specific endpoint
+      const res = isCSV ? await processCsvWorkflow(form) : await processWorkflow(form);
+      
       setSteps(s => s.map((st, i) => i <= 2 ? { ...st, status: "done" } : i === 3 ? { ...st, status: "active" } : st));
       setSteps(s => s.map(st => ({ ...st, status: "done" as const })));
       setResult({ mode, data: res });
@@ -284,6 +290,41 @@ export default function UploadCenter() {
               ✓ Ready for Store & Dashboard
             </span>
           </div>
+
+          {/* CSV Ingestion Statistics */}
+          {result.data?.total_rows !== undefined && (
+            <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: "var(--border-default)", background: "var(--neutral-50)" }}>
+              <div className="text-xs font-bold mb-2" style={{ color: "var(--text-primary)" }}>CSV Ingestion Statistics</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "Total Rows", value: result.data.total_rows, color: "var(--text-primary)" },
+                  { label: "Valid Products", value: result.data.valid_products, color: "var(--color-success)" },
+                  { label: "Invalid Rows", value: result.data.invalid_rows, color: result.data.invalid_rows > 0 ? "var(--color-error)" : "var(--text-muted)" },
+                  { label: "Products Created", value: result.data.products_created, color: "var(--accent-primary)" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="text-center">
+                    <div className="text-lg font-bold" style={{ color }}>{value ?? 0}</div>
+                    <div className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+              {result.data.products_needing_review > 0 && (
+                <div className="text-xs" style={{ color: "var(--color-warning)" }}>
+                  ⚠ {result.data.products_needing_review} products need review
+                </div>
+              )}
+              {result.data.product_type && (
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  Detected product type: <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{result.data.product_type.replace(/_/g, " ")}</span>
+                </div>
+              )}
+              {result.data.errors?.length > 0 && (
+                <div className="text-xs" style={{ color: "var(--color-error)" }}>
+                  {result.data.errors.length} rows had errors (first: {result.data.errors[0]?.error})
+                </div>
+              )}
+            </div>
+          )}
 
           {result.data?.storage_url && (
             <div className="flex items-center gap-2 rounded-lg p-3 text-xs" style={{ background: "var(--color-success-light)", color: "var(--color-success)", border: `1px solid var(--color-success-border)` }}>

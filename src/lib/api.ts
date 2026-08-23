@@ -291,6 +291,24 @@ export async function processWorkflow(formData: FormData) {
   return payload;
 }
 
+export async function processCsvWorkflow(formData: FormData) {
+  const headers = await buildAuthHeaders();
+  const response = await fetch("/api/workflow/process-csv", {
+    method: "POST",
+    body: formData,
+    headers,
+  });
+  const payload = await parseJsonOrText(response);
+  if (!response.ok) {
+    if (response.status === 401) throw new Error("Your session has expired. Please sign in again.");
+    if (response.status === 413) throw new Error("File too large. Maximum upload size is 10 MB.");
+    if (response.status === 422) throw new Error(typeof payload === "string" ? payload : payload?.detail || "CSV processing failed.");
+    if (response.status === 400) throw new Error(typeof payload === "string" ? payload : payload?.detail || "Invalid CSV file.");
+    throw new Error(typeof payload === "string" ? payload : payload?.detail || payload?.message || `CSV processing failed (HTTP ${response.status}).`);
+  }
+  return payload;
+}
+
 export async function ingestUrl(url: string) {
   const headers = await buildAuthHeaders("application/json");
   const response = await fetch("/api/products/url-ingest", {

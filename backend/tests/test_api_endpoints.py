@@ -255,10 +255,13 @@ def test_export_includes_provenance(client, auth_headers):
 # ---------------------------------------------------------------------------
 
 def test_rag_supported_and_unsupported(client, auth_headers):
-    # Supported: question about the demo product (seeded context)
+    # Supported: question about a document with known specs
     ok = client.post(
         "/api/rag/query",
-        json={"question": "What is the rated power of this motor?"},
+        json={
+            "question": "What is the rated power of this motor?",
+            "document_context": "Siemens 1LE1001 15kW motor. Rated Voltage: 415 V. Efficiency: IE3.",
+        },
         headers=auth_headers,
     )
     assert ok.status_code == 200
@@ -273,7 +276,7 @@ def test_rag_supported_and_unsupported(client, auth_headers):
     )
     assert bad.status_code == 200
     assert bad.json()["has_evidence"] is False
-    assert bad.json()["answer"] == "Insufficient evidence."
+    assert "Insufficient evidence." in bad.json()["answer"]
 
 
 # ---------------------------------------------------------------------------

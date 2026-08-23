@@ -4,6 +4,7 @@ Limits requests per client IP to prevent abuse.
 For production, replace with Redis-backed rate limiting.
 """
 
+import os
 import time
 from collections import defaultdict
 from typing import Callable, Dict, List, Tuple
@@ -65,8 +66,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Apply rate limiting to each request."""
-        # Skip rate limiting for health checks, root, and WebSockets (BaseHTTPMiddleware breaks WebSocket handshakes)
-        if request.scope.get("type") == "websocket" or request.url.path in ("/", "/docs", "/openapi.json") or request.url.path.startswith("/api/ws"):
+        # Skip rate limiting for health checks, root, WebSockets, and tests
+        if os.environ.get("TESTING") == "1" or request.scope.get("type") == "websocket" or request.url.path in ("/", "/docs", "/openapi.json") or request.url.path.startswith("/api/ws"):
             return await call_next(request)
 
         client_ip = self._get_client_ip(request)

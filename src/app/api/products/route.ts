@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json(
-      { error: "Backend not configured. Please set BACKEND_URL environment variable." },
+      { error: "Backend not configured. Set BACKEND_URL to your Render deployment URL (e.g. https://your-app.onrender.com) in Vercel environment variables." },
       { status: 503 }
     );
   } catch (err: any) {

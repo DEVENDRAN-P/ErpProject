@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 
@@ -228,7 +228,7 @@ def create_product(db: Session, product_data: ProductCreate, created_by: str | N
                 "old": "None",
                 "new": product.model_number or product.name,
                 "source": "Catalog Ingest",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ]),
     )
@@ -357,7 +357,7 @@ def merge_source_into_product(
                 "new": f"{value} {item.get('unit') or ''}".strip(),
                 "source": source,
                 "evidence": "Conflicting value from additional source — conflict created",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             })
 
         elif existing is None:
@@ -388,7 +388,7 @@ def merge_source_into_product(
                 "new": f"{value} {item.get('unit') or ''}".strip() if value is not None else "NOT_FOUND",
                 "source": source,
                 "evidence": item.get("evidence") or "New attribute extracted from additional source",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             })
         # else: same value from multiple sources — no conflict, nothing to do
 
@@ -421,7 +421,7 @@ def merge_source_into_product(
             )
 
     product.health_score = compute_dynamic_health_score(product.attributes, product.conflicts)
-    product.updated_at = datetime.utcnow()
+    product.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(product)
 
@@ -439,7 +439,7 @@ def update_product_health_score(db: Session, product_id: int) -> int:
 
     new_score = compute_dynamic_health_score(product.attributes, product.conflicts)
     product.health_score = new_score
-    product.updated_at = datetime.utcnow()
+    product.updated_at = datetime.now(timezone.utc)
     db.commit()
     return new_score
 
@@ -464,7 +464,7 @@ def log_catalogpilot_change(
         "source": source or "Human Review",
         "evidence": evidence or "Approved by Catalog Owner",
         "reviewer": reviewer or "system",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     new_ver = ProductVersion(
@@ -504,7 +504,7 @@ def process_human_review_action(
     item.status = canonical_action
     item.reviewer = reviewer or "reviewer@nexgen.ai"
     item.reason = comment
-    item.reviewed_at = datetime.utcnow()
+    item.reviewed_at = datetime.now(timezone.utc)
 
     field_modified = item.title
     old_val = "Pending Review"
@@ -546,14 +546,14 @@ def process_human_review_action(
                 conflict.status = STATUS_RESOLVED
                 conflict.reviewer = item.reviewer
                 conflict.resolution = comment or f"Resolved via review action '{action_key}'"
-                conflict.resolved_at = datetime.utcnow()
+                conflict.resolved_at = datetime.now(timezone.utc)
                 if action_key == "edited" and edited_value:
                     conflict.recommended_value = f"{edited_value} {matching_attr.unit or ''}".strip() if matching_attr else edited_value
             elif action_key == "rejected":
                 conflict.status = STATUS_REJECTED
                 conflict.reviewer = item.reviewer
                 conflict.resolution = comment or "Rejected during human review"
-                conflict.resolved_at = datetime.utcnow()
+                conflict.resolved_at = datetime.now(timezone.utc)
 
     # Log line-by-line diff in CatalogPilot
     log_catalogpilot_change(
@@ -570,7 +570,7 @@ def process_human_review_action(
     # Recalculate dynamic health score
     new_score = compute_dynamic_health_score(product.attributes, product.conflicts)
     product.health_score = new_score
-    product.updated_at = datetime.utcnow()
+    product.updated_at = datetime.now(timezone.utc)
 
     # Create notification for the review action
     if product.created_by:

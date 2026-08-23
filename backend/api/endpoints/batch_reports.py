@@ -151,56 +151,34 @@ def batch_import_csv(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> BatchImportResponse:
-    """Import products from a CSV file."""
+    """Import products from a CSV file.
+    
+    Each valid row becomes an individual product. Uses the CSV-specific
+    pipeline for proper column mapping and per-row processing.
+    """
     if not file.filename or not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Please upload a CSV file.")
 
-    contents = file.file.read().decode("utf-8")
-    reader = csv.DictReader(io.StringIO(contents))
+    contents = file.file.read()
+    if len(contents) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    fieldnames = [f.lower().strip() for f in (reader.fieldnames or [])]
-    valid_indicators = {"name", "product_name", "title", "model_number", "category", "key", "attribute_key"}
-    if not any(indicator in fieldnames for indicator in valid_indicators):
-        raise HTTPException(
-            status_code=400,
-            detail="Unrelated upload rejected. File must contain product catalog columns (e.g., 'name', 'model_number', or 'category')."
-        )
-
-    products_data = {}
-    for row in reader:
-        name = row.get("name", "").strip()
-        if not name:
-            continue
-
-        if name not in products_data:
-            products_data[name] = {
-                "name": name,
-                "model_number": row.get("model_number", ""),
-                "category": row.get("category", ""),
-                "description": row.get("description", ""),
-                "attributes": [],
-            }
-
-        attr_key = row.get("key", row.get("attribute_key", ""))
-        if attr_key:
-            products_data[name]["attributes"].append({
-                "key": attr_key,
-                "label": row.get("label", attr_key),
-                "value": row.get("value", ""),
-                "unit": row.get("unit", ""),
-                "confidence": float(row.get("confidence", 0.5)),
-                "source": row.get("source", ""),
-                "evidence": row.get("evidence", ""),
-            })
-
-    import_input = BatchImportInput(
-        products=[
-            BatchImportItem(**data)
-            for data in products_data.values()
-        ]
+    from backend.services.csv_pipeline_service import process_csv_rows
+    
+    result = process_csv_rows(
+        csv_content=contents,
+        db=db,
+        created_by=current_user.email if current_user else None,
     )
-
-    return batch_import_products(import_input, db, current_user)
+    
+    # Map to BatchImportResponse format
+    return BatchImportResponse(
+        total=result.get("total_rows", 0),
+        succeeded=result.get("products_created", 0),
+        failed=result.get("invalid_rows", 0),
+        errors=result.get("errors", []),
+        product_ids=[p["id"] for p in result.get("products", [])],
+    )
 
 
 # ─── Batch Export ─────────────────────────────────────────────────────────
