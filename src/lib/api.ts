@@ -367,6 +367,25 @@ export function getProductCsvExportUrl(productId: number): string {
   return `/api/products/${productId}/export/csv`;
 }
 
+export async function downloadProductExport(productId: number, format: "json" | "csv" = "json"): Promise<void> {
+  const headers = await buildAuthHeaders();
+  const url = format === "csv" ? getProductCsvExportUrl(productId) : getProductJsonExportUrl(productId);
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Export failed (HTTP ${response.status}).`);
+  }
+  const blob = await response.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = `product_${productId}_export.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(blobUrl);
+}
+
 // ─── Team 1: Knowledge Graph API ────────────────────────────────────────
 
 export async function fetchKnowledgeGraph(productId: number) {

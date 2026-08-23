@@ -330,29 +330,43 @@ function CatalogPilotTab({ product }: { product: ProductRead }) {
 
 // ─── Export ────────────────────────────────────────────────────────
 function ExportTab({ product }: { product: ProductRead }) {
+  const [exporting, setExporting] = React.useState<string | null>(null);
+
+  const handleExport = async (format: "json" | "csv") => {
+    try {
+      setExporting(format);
+      const { downloadProductExport } = await import("@/lib/api");
+      await downloadProductExport(product.id, format);
+    } catch (e: any) {
+      alert(`Export failed: ${e?.message || "Unknown error"}`);
+    } finally {
+      setExporting(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Export Commerce-Ready Data</h3>
       <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Download structured product data for your e-commerce platform, ERP, or PIM system.</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <a href={getProductJsonExportUrl(product.id)} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-4 rounded-lg border p-5 transition group"
+        <button onClick={() => handleExport("json")} disabled={exporting === "json"}
+          className="flex items-center gap-4 rounded-lg border p-5 transition group disabled:opacity-50"
           style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
           <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ background: "var(--accent-primary-light)", color: "var(--accent-primary)" }}><FileJson size={20} /></div>
           <div>
-            <div className="font-semibold text-sm" style={{ color: "var(--accent-primary)" }}>Export JSON</div>
+            <div className="font-semibold text-sm" style={{ color: "var(--accent-primary)" }}>{exporting === "json" ? "Downloading…" : "Export JSON"}</div>
             <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Commerce-ready structured spec</div>
           </div>
-        </a>
-        <a href={getProductCsvExportUrl(product.id)} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-4 rounded-lg border p-5 transition group"
+        </button>
+        <button onClick={() => handleExport("csv")} disabled={exporting === "csv"}
+          className="flex items-center gap-4 rounded-lg border p-5 transition group disabled:opacity-50"
           style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
           <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ background: "var(--color-purple-light)", color: "var(--color-purple)" }}><FileSpreadsheet size={20} /></div>
           <div>
-            <div className="font-semibold text-sm" style={{ color: "var(--color-purple)" }}>Export CSV</div>
+            <div className="font-semibold text-sm" style={{ color: "var(--color-purple)" }}>{exporting === "csv" ? "Downloading…" : "Export CSV"}</div>
             <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Spreadsheet / ERP import</div>
           </div>
-        </a>
+        </button>
       </div>
       <div className="rounded-lg border p-4" style={{ borderColor: "var(--border-default)", background: "var(--bg-card)" }}>
         <div className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>Product Summary</div>
