@@ -1,12 +1,13 @@
+import { resolveBackendUrl } from "@/app/api/_lib/proxy";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+    const backendUrl = resolveBackendUrl();
 
-    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+    if (backendUrl) {
       const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/products/${params.id}/explainability`, {
         headers: {
           Authorization: request.headers.get("Authorization") || "",

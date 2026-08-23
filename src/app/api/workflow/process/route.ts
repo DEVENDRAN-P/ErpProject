@@ -1,3 +1,4 @@
+import { resolveBackendUrl } from "@/app/api/_lib/proxy";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -9,10 +10,10 @@ const BACKEND_TIMEOUT_MS = 55_000; // 55 seconds
 
 export async function POST(request: Request) {
   try {
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+    const backendUrl = resolveBackendUrl();
 
     // Proxy request to the Render FastAPI backend
-    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+    if (backendUrl) {
       const formData = await request.formData();
 
       // Use AbortController for timeout

@@ -1,3 +1,4 @@
+import { resolveBackendUrl } from "@/app/api/_lib/proxy";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -7,9 +8,9 @@ export async function POST(
   { params }: { params: { reviewId: string } }
 ) {
   try {
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+    const backendUrl = resolveBackendUrl();
 
-    if (backendUrl && !backendUrl.includes("localhost") && !backendUrl.includes("127.0.0.1")) {
+    if (backendUrl) {
       const body = await request.json();
       const res = await fetch(`${backendUrl.replace(/\/$/, "")}/api/review/${params.reviewId}/action`, {
         method: "POST",
