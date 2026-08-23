@@ -191,7 +191,11 @@ export async function fetchProducts(query = "") {
     if (response.ok && Array.isArray(payload) && payload.length > 0) {
       return payload as ProductRead[];
     }
-  } catch {}
+    // Backend returned empty or error — fall through to Firestore
+    if (!response.ok) console.warn(`[fetchProducts] Backend returned ${response.status}:`, payload);
+  } catch (e) {
+    console.warn("[fetchProducts] Backend fetch failed, falling back to Firestore:", e);
+  }
 
   if (uid) {
     const userProducts = await getUserProducts(uid);
