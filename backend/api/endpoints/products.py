@@ -262,30 +262,32 @@ def export_product_json(
     if not product:
         # Firestore fallback: product may have been saved only to Firestore
         try:
-            from backend.core.firebase import firebase_app
+            from backend.core.firebase import get_firebase_app
             from firebase_admin import firestore
-            fs = firestore.client(firebase_app)
-            doc = fs.collection("users").document(current_user.uid).collection("products").document(str(product_id)).get()
-            if doc.exists:
-                data = doc.to_dict()
-                export_payload = {
-                    "product": {
-                        "id": product_id,
-                        "name": data.get("name", "Unknown"),
-                        "model_number": data.get("model_number", ""),
-                        "category": data.get("category", ""),
-                        "description": data.get("description", ""),
-                        "health_score": data.get("health_score", 0),
-                    },
-                    "attributes": data.get("attributes", []),
-                    "conflicts": data.get("conflicts", []),
-                    "exported_at": data.get("updated_at"),
-                    "format": "commerce-ready",
-                    "source": "firestore",
-                }
-                return Response(content=json.dumps(export_payload, indent=2), media_type="application/json")
-        except Exception:
-            pass
+            fapp = get_firebase_app()
+            if fapp:
+                fs = firestore.client(fapp)
+                doc = fs.collection("users").document(current_user.uid).collection("products").document(str(product_id)).get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    export_payload = {
+                        "product": {
+                            "id": product_id,
+                            "name": data.get("name", "Unknown"),
+                            "model_number": data.get("model_number", ""),
+                            "category": data.get("category", ""),
+                            "description": data.get("description", ""),
+                            "health_score": data.get("health_score", 0),
+                        },
+                        "attributes": data.get("attributes", []),
+                        "conflicts": data.get("conflicts", []),
+                        "exported_at": data.get("updated_at"),
+                        "format": "commerce-ready",
+                        "source": "firestore",
+                    }
+                    return Response(content=json.dumps(export_payload, indent=2), media_type="application/json")
+        except Exception as exc:
+            print(f"[EXPORT JSON] Firestore fallback error: {exc}")
         raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     export_payload = {
@@ -324,8 +326,48 @@ def export_product_csv(
 ):
     product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
-        product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
+        # Firestore fallback: product may have been saved only to Firestore
+        try:
+            from backend.core.firebase import get_firebase_app
+            from firebase_admin import firestore
+            fapp = get_firebase_app()
+            if fapp:
+                fs = firestore.client(fapp)
+                doc = fs.collection("users").document(current_user.uid).collection("products").document(str(product_id)).get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    attrs = data.get("attributes", [])
+                    output = io.StringIO()
+                    writer = csv.writer(output)
+                    writer.writerow([
+                        "Key", "Label", "Value", "Normalized Value", "Unit", "Confidence", "Status",
+                        "Source", "Page", "Evidence", "Evidence Quote", "LOV Valid", "UOM Valid",
+                    ])
+                    for attr in attrs:
+                        if isinstance(attr, dict):
+                            writer.writerow([
+                                attr.get("key", ""),
+                                attr.get("label", ""),
+                                attr.get("value", ""),
+                                attr.get("normalized_value", ""),
+                                attr.get("unit", ""),
+                                attr.get("confidence", 0),
+                                canonical_status(attr.get("status", "unverified")),
+                                attr.get("source", ""),
+                                attr.get("page", 1),
+                                attr.get("evidence", ""),
+                                attr.get("evidence_quote", ""),
+                                attr.get("lov_valid", False),
+                                attr.get("uom_valid", False),
+                            ])
+                    name = data.get("model_number") or data.get("name", str(product_id))
+                    return Response(
+                        content=output.getvalue(),
+                        media_type="text/csv",
+                        headers={"Content-Disposition": f"attachment; filename=product_{name}_export.csv"},
+                    )
+        except Exception as exc:
+            print(f"[EXPORT CSV] Firestore fallback error: {exc}")
         raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     output = io.StringIO()
