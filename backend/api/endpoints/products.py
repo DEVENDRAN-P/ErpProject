@@ -110,6 +110,19 @@ def product_health_breakdown(
 ) -> Dict[str, Any]:
     product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
+        # Firestore fallback
+        try:
+            from backend.core.firebase import get_firebase_app
+            from firebase_admin import firestore
+            fapp = get_firebase_app()
+            if fapp:
+                fs = firestore.client(fapp)
+                doc = fs.collection("users").document(current_user.uid).collection("products").document(str(product_id)).get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    return {"health_score": data.get("health_score", 0), "source": "firestore"}
+        except Exception:
+            pass
         raise HTTPException(status_code=404, detail="Product not found")
     return health_score_breakdown(product.attributes, product.conflicts)
 

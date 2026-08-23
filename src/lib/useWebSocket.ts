@@ -1,52 +1,67 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { auth } from "@/lib/firebase";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-export type WsNotificationPayload = {
-  type: string; // conflict | review | system | batch | quality
+type WsNotificationPayload = {
+  id?: string;
+  type: string;
   title: string;
-  message?: string;
+  message: string;
   product_id?: number;
   timestamp?: string;
 };
 
-type WsMessage =
-  | { type: "connected"; data: { user_id: string; message: string } }
-  | { type: "notification"; data: WsNotificationPayload }
-  | { type: "pong"; data: Record<string, never> }
-  | { type: "ack"; data: { notification_id?: number } };
+type WsMessage = {
+  type: string;
+  data?: WsNotificationPayload;
+};
 
-export type UseWebSocketOptions = {
-  /** Firebase user ID to authenticate the WebSocket connection. */
-  userId: string | null;
-  /** Backend WebSocket URL. Falls back to same-origin with /api prefix. */
-  wsUrl?: string;
-  /** Auto-reconnect on drop (default true). */
+type UseWebSocketOptions = {
+  userId?: string;
   autoReconnect?: boolean;
-  /** Heartbeat interval in ms (default 30 000). */
   heartbeatMs?: number;
 };
 
-export type UseWebSocketReturn = {
-  /** Whether the WebSocket is currently connected. */
+type UseWebSocketReturn = {
   connected: boolean;
-  /** The most recent notification pushed via WS. */
   lastNotification: WsNotificationPayload | null;
-  /** All notifications received since mount. */
   notifications: WsNotificationPayload[];
-  /** Clear the notifications array. */
   clearNotifications: () => void;
-  /** Send an arbitrary message to the server. */
   send: (msg: unknown) => void;
 };
 
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
+function resolveWsUrl(): string {
+  try {
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+    // Production: derive from NEXT_PUBLIC_BACKEND_URL
+    const envUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (envUrl) {
+      const u = new URL(envUrl);
+      u.protocol = proto;
+      u.pathname = "/api/ws/notifications";
+      u.search = "";
+      return u.toString();
+    }
+
+    // Same-host fallback (works in local dev)
+    const host = window.location.hostname;
+    const port = process.env.NEXT_PUBLIC_WS_PORT || "8000";
+    return `${proto}//${host}:${port}/api/ws/notifications`;
+  } catch {
+    return "ws://localhost:8000/api/ws/notifications";
+  }
+}
+
+/** Detect if we're on a platform known not to support WebSocket (e.g. Render free tier). */
+function wsUnsupported(): boolean {
+  try {
+    const envUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+    if (envUrl.includes("onrender.com")) return true;
+  } catch {}
+  return false;
+}
 
 export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
   const { userId, autoReconnect = true, heartbeatMs = 30_000 } = opts;
@@ -59,27 +74,7 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttempt = useRef(0);
-
-  // Resolve the WS URL once per userId change
-  const wsUrl = (() => {
-    // 1. Explicit override
-    if (opts.wsUrl) return opts.wsUrl;
-    // 2. Environment variable (set on Vercel for production)
-    if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
-    // 3. Derive from backend URL or current host
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL;
-    if (backendUrl) {
-      try {
-        const u = new URL(backendUrl);
-        return `${u.protocol === "https:" ? "wss:" : "ws:"}//${u.host}/api/ws/notifications`;
-      } catch {}
-    }
-    // 4. Same-host fallback (works in local dev)
-    const host = window.location.hostname;
-    const port = process.env.NEXT_PUBLIC_WS_PORT || "8000";
-    return `${proto}//${host}:${port}/api/ws/notifications`;
-  })();
+  const wsUrl = resolveWsUrl();
 
   const cleanup = useCallback(() => {
     if (heartbeatRef.current) {
@@ -107,8 +102,9 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
 
   const connect = useCallback(() => {
     if (!userId) return;
-    // On remote hosts without a configured WS URL, derive the URL from the backend.
-    // This allows WebSocket to work when the backend supports it.
+    // Skip WebSocket on platforms that don't support it
+    if (wsUnsupported()) return;
+
     cleanup();
 
     const url = `${wsUrl}?user_id=${encodeURIComponent(userId)}`;
@@ -125,11 +121,10 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
       try {
         const msg: WsMessage = JSON.parse(event.data);
         if (msg.type === "notification") {
-          const payload = msg.data;
+          const payload = msg.data!;
           setLastNotification(payload);
-          setNotifications((prev) => [payload, ...prev].slice(0, 100)); // keep last 100
+          setNotifications((prev) => [payload, ...prev].slice(0, 100));
         }
-        // "connected" and "pong" are silently handled
       } catch {
         // ignore malformed messages
       }
@@ -140,8 +135,8 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       wsRef.current = null;
 
-      if (autoReconnect && userId && reconnectAttempt.current < 5) {
-        const delay = Math.min(2000 * 2 ** reconnectAttempt.current, 30_000);
+      if (autoReconnect && userId && reconnectAttempt.current < 3) {
+        const delay = Math.min(5000 * 2 ** reconnectAttempt.current, 60_000);
         reconnectAttempt.current += 1;
         reconnectTimerRef.current = setTimeout(connect, delay);
       }
@@ -161,7 +156,6 @@ export function useWebSocket(opts: UseWebSocketOptions): UseWebSocketReturn {
   useEffect(() => {
     const handlePageShow = (e: PageTransitionEvent) => {
       if (e.persisted && userId) {
-        // Page was restored from BFCache — force reconnect
         cleanup();
         reconnectAttempt.current = 0;
         connect();

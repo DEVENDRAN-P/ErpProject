@@ -45,7 +45,7 @@ export default function NotificationBell() {
   }, []);
 
   // ── WebSocket for real-time push ─────────────────────────────────────
-  const { connected, lastNotification } = useWebSocket({ userId });
+  const { connected, lastNotification } = useWebSocket({ userId: userId ?? undefined });
 
   // When a WS notification arrives: refresh list, bump unread, show toast
   useEffect(() => {
