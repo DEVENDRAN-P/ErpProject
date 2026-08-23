@@ -286,6 +286,8 @@ export async function processWorkflow(formData: FormData) {
     if (response.status === 413) throw new Error("File too large. Maximum upload size is 10 MB.");
     if (response.status === 422) throw new Error(typeof payload === "string" ? payload : payload?.detail || "Validation failed. The document could not be processed.");
     if (response.status === 400) throw new Error(typeof payload === "string" ? payload : payload?.detail || "Invalid request. Please check the file type and try again.");
+    if (response.status === 504) throw new Error(typeof payload === "string" ? payload : payload?.error || "Analysis timed out. The document may be too large — try a smaller file or wait and retry.");
+    if (response.status === 502) throw new Error(typeof payload === "string" ? payload : payload?.error || "Backend temporarily unavailable. Please try again in a moment.");
     throw new Error(typeof payload === "string" ? payload : payload?.detail || payload?.message || `Document analysis failed (HTTP ${response.status}).`);
   }
   return payload;
@@ -304,6 +306,8 @@ export async function processCsvWorkflow(formData: FormData) {
     if (response.status === 413) throw new Error("File too large. Maximum upload size is 10 MB.");
     if (response.status === 422) throw new Error(typeof payload === "string" ? payload : payload?.detail || "CSV processing failed.");
     if (response.status === 400) throw new Error(typeof payload === "string" ? payload : payload?.detail || "Invalid CSV file.");
+    if (response.status === 504) throw new Error(typeof payload === "string" ? payload : payload?.error || "CSV processing timed out. Try a smaller file or split into batches.");
+    if (response.status === 502) throw new Error(typeof payload === "string" ? payload : payload?.error || "Backend temporarily unavailable. Please try again in a moment.");
     throw new Error(typeof payload === "string" ? payload : payload?.detail || payload?.message || `CSV processing failed (HTTP ${response.status}).`);
   }
   return payload;
