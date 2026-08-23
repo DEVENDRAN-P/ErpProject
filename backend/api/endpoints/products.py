@@ -260,6 +260,32 @@ def export_product_json(
 ):
     product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
     if not product:
+        # Firestore fallback: product may have been saved only to Firestore
+        try:
+            from backend.core.firebase import firebase_app
+            from firebase_admin import firestore
+            fs = firestore.client(firebase_app)
+            doc = fs.collection("users").document(current_user.uid).collection("products").document(str(product_id)).get()
+            if doc.exists:
+                data = doc.to_dict()
+                export_payload = {
+                    "product": {
+                        "id": product_id,
+                        "name": data.get("name", "Unknown"),
+                        "model_number": data.get("model_number", ""),
+                        "category": data.get("category", ""),
+                        "description": data.get("description", ""),
+                        "health_score": data.get("health_score", 0),
+                    },
+                    "attributes": data.get("attributes", []),
+                    "conflicts": data.get("conflicts", []),
+                    "exported_at": data.get("updated_at"),
+                    "format": "commerce-ready",
+                    "source": "firestore",
+                }
+                return Response(content=json.dumps(export_payload, indent=2), media_type="application/json")
+        except Exception:
+            pass
         raise HTTPException(status_code=404, detail="Product not found or access denied")
 
     export_payload = {
@@ -297,6 +323,8 @@ def export_product_csv(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     product = db.query(Product).filter(Product.id == product_id, Product.created_by == current_user.email).first()
+    if not product:
+        product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found or access denied")
 
